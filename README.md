@@ -18,12 +18,12 @@ npm install
 cd ..
 ```
 
-## 3. حفظ مفتاح OpenAI بأمان
+## 3. حفظ مفتاح Gemini بأمان
 
 لا تضع المفتاح داخل `public/app.js`. نفّذ:
 
 ```bash
-firebase functions:secrets:set OPENAI_API_KEY
+firebase functions:secrets:set GEMINI_API_KEY
 ```
 
 ثم الصق المفتاح داخل الطرفية فقط عند الطلب.
@@ -34,7 +34,7 @@ firebase functions:secrets:set OPENAI_API_KEY
 firebase deploy
 ```
 
-قد يتطلب نشر Cloud Functions تفعيل خطة Blaze في Firebase. استخدام OpenAI API له تكلفة منفصلة حسب الاستعمال.
+قد يتطلب نشر Cloud Functions تفعيل خطة Blaze في Firebase. استخدام Gemini API يخضع للحصة والتسعير في Google AI Studio.
 
 ## الملفات
 
