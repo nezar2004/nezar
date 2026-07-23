@@ -4,6 +4,7 @@ import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/fireb
 
 const config={apiKey:"AIzaSyD0aqTFxCsXOROKXaLZE9IV0zGmWCqsKQ8",authDomain:"hayati-app-35028.firebaseapp.com",projectId:"hayati-app-35028",storageBucket:"hayati-app-35028.firebasestorage.app",messagingSenderId:"216794693163",appId:"1:216794693163:web:e864c50ad01fde5f1ab46e"};
 const AI_ENDPOINT="https://hayati-ai.nezarcaht.workers.dev";
+const PROFILE_VERSION=2;
 const fb=initializeApp(config),auth=getAuth(fb),db=getFirestore(fb);
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const screens=["#loader","#auth","#onboarding","#analyzing","#dashboard"];
@@ -33,6 +34,13 @@ onAuthStateChanged(auth,async user=>{
   try{
     const snap=await getDoc(doc(db,"users",user.uid));
     userData=snap.exists()?snap.data():{};
+    if(snap.exists()&&userData.onboardingComplete&&Number(userData.profileVersion||0)<PROFILE_VERSION){
+      await setDoc(doc(db,"users",user.uid),{onboardingComplete:false,profileVersion:PROFILE_VERSION,answers:{}},{merge:true});
+      await signOut(auth);
+      show("#auth");
+      $("#authError").textContent="تم تحديث التطبيق. سجّل الدخول مجددًا ثم عبّئ بياناتك الجديدة.";
+      return;
+    }
     workspace();
     if(userData.onboardingComplete&&userData.plan){show("#dashboard");renderDashboard("home")}
     else{show("#onboarding");renderStep()}
@@ -51,7 +59,7 @@ $("#authForm").onsubmit=async e=>{
     if(mode==="signup"){
       const c=await createUserWithEmailAndPassword(auth,$("#email").value,$("#password").value);
       await updateProfile(c.user,{displayName:$("#name").value});
-      await setDoc(doc(db,"users",c.user.uid),{name:$("#name").value,email:c.user.email,onboardingComplete:false,workspace:emptyWorkspace()});
+      await setDoc(doc(db,"users",c.user.uid),{name:$("#name").value,email:c.user.email,onboardingComplete:false,profileVersion:PROFILE_VERSION,workspace:emptyWorkspace()});
     }else await signInWithEmailAndPassword(auth,$("#email").value,$("#password").value);
   }catch(e){$("#authError").textContent=`تعذر تسجيل الدخول: ${e.code||e.message}`}
 };
@@ -89,8 +97,8 @@ async function generatePlan(){
     const response=await fetch(AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({answers})});
     const result=await response.json();
     if(!response.ok||!result.plan)throw new Error(result.error||"تعذر إنشاء الخطة");
-    await setDoc(doc(db,"users",currentUser.uid),{answers,plan:result.plan,onboardingComplete:true},{merge:true});
-    userData={...userData,answers,plan:result.plan,onboardingComplete:true};show("#dashboard");renderDashboard("home");
+    await setDoc(doc(db,"users",currentUser.uid),{answers,plan:result.plan,onboardingComplete:true,profileVersion:PROFILE_VERSION},{merge:true});
+    userData={...userData,answers,plan:result.plan,onboardingComplete:true,profileVersion:PROFILE_VERSION};show("#dashboard");renderDashboard("home");
   }catch(e){console.error(e);show(userData.plan?"#dashboard":"#onboarding");if(userData.plan)renderDashboard(view);alert(`تعذر إنشاء الخطة: ${e.message}`)}
 }
 
