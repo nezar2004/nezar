@@ -5,7 +5,7 @@ import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/fireb
 const config={apiKey:"AIzaSyD0aqTFxCsXOROKXaLZE9IV0zGmWCqsKQ8",authDomain:"hayati-app-35028.firebaseapp.com",projectId:"hayati-app-35028",storageBucket:"hayati-app-35028.firebasestorage.app",messagingSenderId:"216794693163",appId:"1:216794693163:web:e864c50ad01fde5f1ab46e"};
 const AI_ENDPOINT="https://hayati-ai.nezarcaht.workers.dev";
 // ارفع هذا الرقم فقط عندما يحتاج التحديث إلى إعادة تعبئة بيانات جميع المستخدمين.
-const PROFILE_VERSION=4;
+const PROFILE_VERSION=5;
 const DEFAULT_WORKOUT_SPLIT=[
   {day:"اليوم الأول",focus:"صدر وترايسبس",exercises:[
     ["Machine Chest Press","جهاز ضغط الصدر","الصدر",4,"8-12",90],
@@ -141,14 +141,33 @@ $("#resetForm").onsubmit=async e=>{
   }
 };
 
+const roleOptions=[
+  ["school","طالب مدرسة","الدروس والواجبات والاختبارات المدرسية","▣"],
+  ["university","طالب جامعي","المواد والمحاضرات والكويزات والمشاريع","🎓"],
+  ["employee","موظف","الدوام والمهام والأهداف المهنية","▦"],
+  ["jobseeker","أبحث عن عمل","تنظيم اليوم والمهارات وخطة البحث عن فرصة","◎"]
+];
+const activeAnswers=()=>Object.keys(answers||{}).length?answers:(userData?.answers||{});
+const hasRole=role=>(activeAnswers().roles||[]).includes(role);
+const isStudying=()=>hasRole("school")||hasRole("university")||(hasRole("jobseeker")&&activeAnswers().stillStudying&&activeAnswers().stillStudying!=="لا أدرس حاليًا");
+const hasWorkContext=()=>hasRole("employee")||hasRole("jobseeker");
+function contextQuestions(){
+  const blocks=[];
+  if(hasRole("school"))blocks.push(`<div class="context-block"><h3>بيانات المدرسة</h3><div class="fields"><label>الصف الدراسي<input id="schoolGrade" value="${answers.schoolGrade||""}" placeholder="مثال: الحادي عشر"></label><label>مواعيد المدرسة<input id="schoolSchedule" value="${answers.schoolSchedule||""}" placeholder="الأحد–الخميس، 8:00–2:00"></label><label>المواد الحالية<textarea id="schoolSubjects">${answers.schoolSubjects||""}</textarea></label><label>أقرب اختبارات أو واجبات<textarea id="schoolDeadlines">${answers.schoolDeadlines||""}</textarea></label></div></div>`);
+  if(hasRole("university"))blocks.push(`<div class="context-block"><h3>بيانات الجامعة</h3><div class="fields"><label>التخصص<input id="major" value="${answers.major||""}"></label><label>السنة الدراسية<input id="universityYear" value="${answers.universityYear||""}" placeholder="الأولى، الثانية..."></label><label>جدول الجامعة<textarea id="schedule" placeholder="الأحد من 8:30 إلى 3:20...">${answers.schedule||""}</textarea></label><label>المواد الحالية<textarea id="courses">${answers.courses||""}</textarea></label><label>نظام الامتحانات<select id="examSystem"><option>First + Second + Final</option><option>Mid + Final</option><option>كويزات + Mid + Final</option><option>نظام آخر</option></select></label><label>أقرب امتحانات أو مشاريع<textarea id="academicDeadlines">${answers.academicDeadlines||""}</textarea></label></div></div>`);
+  if(hasRole("employee"))blocks.push(`<div class="context-block"><h3>بيانات العمل</h3><div class="fields"><label>المسمى الوظيفي<input id="jobTitle" value="${answers.jobTitle||""}"></label><label>أيام العمل<input id="workDays" value="${answers.workDays||""}" placeholder="الأحد–الخميس"></label><label>ساعات الدوام<input id="workSchedule" value="${answers.workSchedule||""}" placeholder="9:00–5:00"></label><label>أهم أهدافك في العمل<textarea id="workGoals">${answers.workGoals||""}</textarea></label></div></div>`);
+  if(hasRole("jobseeker"))blocks.push(`<div class="context-block"><h3>البحث عن عمل</h3><div class="fields"><label>هل ما زلت تدرس؟<select id="stillStudying"><option>لا أدرس حاليًا</option><option>أدرس في المدرسة</option><option>أدرس في الجامعة</option><option>أتعلم بشكل ذاتي</option></select></label><label>العمل الذي تبحث عنه<input id="desiredJob" value="${answers.desiredJob||""}"></label><label>مهاراتك الحالية<textarea id="jobSkills">${answers.jobSkills||""}</textarea></label><label>وقت يومي للبحث والتطوير<input id="jobSearchHours" type="number" min="0" max="12" step=".5" value="${answers.jobSearchHours||2}"></label></div></div>`);
+  if(!blocks.length)blocks.push(`<div class="context-block"><h3>روتينك الحالي</h3><label>صف يومك المعتاد<textarea id="dailyRoutine">${answers.dailyRoutine||""}</textarea></label></div>`);
+  return blocks.join("");
+}
 const steps=[
+  {title:"ما وضعك الحالي؟",desc:"اختر خيارًا أو خيارين حتى نعرض لك ما يناسب حياتك فقط.",html:()=>`<div class="role-grid">${roleOptions.map(([key,title,desc,icon])=>`<button class="role-option ${hasRole(key)?"selected":""}" data-role="${key}"><i>${icon}</i><span><b>${title}</b><small>${desc}</small></span><em>${hasRole(key)?"✓":""}</em></button>`).join("")}</div><p class="selection-hint">يمكنك اختيار حالتين، مثل: طالب جامعي وموظف.</p>`},
   {title:"بيانات الجسم الأساسية",desc:"نستخدمها لتقدير الاحتياج اليومي بشكل مناسب.",html:()=>`<div class="fields"><label>العمر<input id="age" type="number" min="16" max="90" required value="${answers.age||""}"></label><label>الطول (سم)<input id="height" type="number" min="120" max="230" required value="${answers.height||""}"></label><label>الوزن الحالي (كغم)<input id="weight" type="number" min="35" max="300" required step=".1" value="${answers.weight||""}"></label><label>الوزن المستهدف (كغم)<input id="targetWeight" type="number" min="35" max="300" required step=".1" value="${answers.targetWeight||""}"></label><label>محيط الخصر (اختياري)<input id="waist" type="number" min="40" max="220" step=".1" value="${answers.waist||""}"></label><label>الجنس<select id="gender"><option value="male">ذكر</option><option value="female">أنثى</option></select></label><label>مستوى النشاط<select id="activityLevel"><option>قليل الحركة</option><option>نشاط خفيف</option><option>نشاط متوسط</option><option>نشاط مرتفع</option></select></label><label>المدة المرغوبة للوصول للهدف<select id="goalPace"><option>بشكل تدريجي وآمن</option><option>بدون موعد محدد</option><option>خلال 3 أشهر</option><option>خلال 6 أشهر</option></select></label></div>`},
   {title:"ما هدفك؟",desc:"هذا الاختيار يغيّر السعرات والماكروز وحجم الوجبات.",html:()=>`<div class="option-grid">${["تنشيف","تضخيم","تثبيت الوزن","تنظيم الحياة"].map(x=>`<button class="option ${answers.goal===x?"selected":""}" data-goal="${x}">${x}</button>`).join("")}</div><p class="muted">${answers.goal?`اختيارك الحالي: ${answers.goal}`:"اختر هدفًا للمتابعة"}</p>`},
   {title:"النوم والاستيقاظ",desc:"سنرتب يومك حولهما.",html:()=>`<div class="fields"><label>وقت النوم<input id="sleep" type="time" value="${answers.sleep||"00:00"}"></label><label>وقت الاستيقاظ<input id="wake" type="time" value="${answers.wake||"07:30"}"></label></div>`},
-  {title:"الدوام أو الجامعة",desc:"اكتب جدولك الأسبوعي.",html:()=>`<label>المواعيد<textarea id="schedule" rows="6" placeholder="الأحد من 8:30 إلى 3:20...">${answers.schedule||""}</textarea></label>`},
+  {title:"دراستك وعملك",desc:"نعرض هذه الأسئلة بناءً على اختيارك في البداية.",html:contextQuestions},
   {title:"تفضيلات النظام الغذائي",desc:"لنقترح وجبات يمكنك الالتزام بها فعلًا.",html:()=>`<div class="fields"><label>نوع الغذاء<select id="dietType"><option>عادي</option><option>نباتي</option><option>قليل الكربوهيدرات</option><option>بدون ألبان</option><option>بدون جلوتين</option></select></label><label>عدد الوجبات يوميًا<input id="mealsPerDay" type="number" min="2" max="6" value="${answers.mealsPerDay||3}"></label><label>ميزانية الطعام اليومية (د.أ)<input id="foodBudget" type="number" min="0" step=".1" value="${answers.foodBudget||0}"></label><label>إمكانية الطبخ<select id="cookingAccess"><option>أستطيع الطبخ يوميًا</option><option>طبخ بسيط وسريع</option><option>أعتمد غالبًا على الطعام الجاهز</option></select></label><label>أكلات تحبها<textarea id="liked">${answers.liked||""}</textarea></label><label>أكلات لا تحبها<textarea id="disliked">${answers.disliked||""}</textarea></label><label class="full">الحساسية أو القيود الصحية المتعلقة بالطعام<textarea id="allergies" placeholder="اكتب لا يوجد إذا لم يكن لديك شيء">${answers.allergies||""}</textarea></label><label>المكملات المستخدمة<input id="supplements" value="${answers.supplements||""}" placeholder="مثل بروتين أو لا يوجد"></label></div>`},
   {title:"التمارين والحركة",desc:"نربط الغذاء بالتمرين والتعافي.",html:()=>`<div class="fields"><label>أيام التمرين أسبوعيًا<input id="trainingDays" type="number" min="0" max="7" value="${answers.trainingDays??3}"></label><label>وقت التمرين المناسب<input id="trainingTime" type="time" value="${answers.trainingTime||"17:00"}"></label><label>نوع التمرين<select id="trainingType"><option>حديد</option><option>كارديو</option><option>حديد وكارديو</option><option>تمارين منزلية</option><option>لا أتمرن حاليًا</option></select></label><label>مدة الحصة بالدقائق<input id="trainingDuration" type="number" min="15" max="180" value="${answers.trainingDuration||60}"></label><label class="full">إصابات أو قيود حركية<textarea id="injuries" placeholder="اكتب لا يوجد إذا لم يكن لديك شيء">${answers.injuries||""}</textarea></label></div>`},
-  {title:"الدراسة والجامعة",desc:"حتى نرتب المذاكرة قبل الامتحانات والمشاريع.",html:()=>`<div class="fields"><label>المواد الحالية<textarea id="courses" placeholder="برمجة، رياضيات، قواعد بيانات...">${answers.courses||""}</textarea></label><label>نظام الامتحانات<select id="examSystem"><option>First + Second + Final</option><option>Mid + Final</option><option>كويزات + Mid + Final</option><option>نظام آخر</option></select></label><label>أقرب امتحانات أو مشاريع<textarea id="academicDeadlines" placeholder="اسم المادة، النوع، التاريخ">${answers.academicDeadlines||""}</textarea></label><label>ساعات الدراسة المستهدفة يوميًا<input id="studyHoursTarget" type="number" min="0" max="12" step=".5" value="${answers.studyHoursTarget||3}"></label></div>`},
   {title:"المهام والعادات",desc:"ما الذي تريد إنجازه باستمرار؟",html:()=>`<div class="fields"><label>المهام الأساسية<textarea id="tasks">${answers.tasks||""}</textarea></label><label>العادات اليومية<textarea id="habits">${answers.habits||""}</textarea></label></div>`},
   {title:"الميزانية والملاحظات",desc:"آخر خطوة.",html:()=>`<div class="fields"><label>الدخل اليومي<input id="income" type="number" step=".1" value="${answers.income||0}"></label><label>المصروف اليومي<input id="expenses" type="number" step=".1" value="${answers.expenses||0}"></label></div><label>ملاحظات<textarea id="notes">${answers.notes||""}</textarea></label><label style="display:flex;grid-template-columns:auto 1fr;gap:10px;margin-top:18px;line-height:1.7"><input id="aiConsent" type="checkbox" style="width:18px" ${answers.aiConsent?"checked":""}><span>أوافق على استخدام إجاباتي لإنشاء خطتي الشخصية. لن تُستخدم كلمة المرور أو تُرسل ضمن التحليل.</span></label>`}
 ];
@@ -158,14 +177,29 @@ function renderStep(){
   $("#questionBody").innerHTML=`<h1>${steps[step].title}</h1><p>${steps[step].desc}</p>${steps[step].html()}`;
   $("#prevStep").style.visibility=step?"visible":"hidden";
   $("#nextStep").textContent=step===steps.length-1?"✦ إنشاء خطتي":"التالي";
-  ["gender","activityLevel","goalPace","dietType","cookingAccess","trainingType","examSystem"].forEach(k=>{if($("#"+k)&&answers[k])$("#"+k).value=answers[k]});
+  ["gender","activityLevel","goalPace","dietType","cookingAccess","trainingType","examSystem","stillStudying"].forEach(k=>{if($("#"+k)&&answers[k])$("#"+k).value=answers[k]});
 }
 function collect(){
-  ["age","height","weight","targetWeight","waist","gender","activityLevel","goalPace","sleep","wake","schedule","dietType","mealsPerDay","foodBudget","cookingAccess","liked","disliked","allergies","supplements","trainingDays","trainingTime","trainingType","trainingDuration","injuries","courses","examSystem","academicDeadlines","studyHoursTarget","tasks","habits","income","expenses","notes"].forEach(k=>{const el=$("#"+k);if(el)answers[k]=el.type==="number"?Number(el.value):el.value});
+  ["age","height","weight","targetWeight","waist","gender","activityLevel","goalPace","sleep","wake","schedule","schoolGrade","schoolSchedule","schoolSubjects","schoolDeadlines","major","universityYear","courses","examSystem","academicDeadlines","jobTitle","workDays","workSchedule","workGoals","stillStudying","desiredJob","jobSkills","jobSearchHours","dailyRoutine","dietType","mealsPerDay","foodBudget","cookingAccess","liked","disliked","allergies","supplements","trainingDays","trainingTime","trainingType","trainingDuration","injuries","studyHoursTarget","tasks","habits","income","expenses","notes"].forEach(k=>{const el=$("#"+k);if(el)answers[k]=el.type==="number"?Number(el.value):el.value});
   if($("#aiConsent"))answers.aiConsent=$("#aiConsent").checked;
 }
-document.addEventListener("click",e=>{if(e.target.dataset.goal){answers.goal=e.target.dataset.goal;renderStep()}});
-$("#nextStep").onclick=async()=>{const invalid=$("#questionBody input:invalid");if(invalid){invalid.reportValidity();return}collect();if(step===1&&!answers.goal)return alert("اختر هدفك أولًا.");if(step<steps.length-1){step++;renderStep()}else{if(!answers.aiConsent)return alert("يجب الموافقة على إرسال البيانات لإنشاء الخطة.");await generatePlan()}};
+document.addEventListener("click",e=>{
+  const roleButton=e.target.closest("[data-role]");
+  if(roleButton){
+    const role=roleButton.dataset.role,current=[...(answers.roles||[])],exists=current.includes(role);
+    if(exists)answers.roles=current.filter(x=>x!==role);
+    else{
+      let next=current;
+      if(role==="school")next=next.filter(x=>x!=="university");
+      if(role==="university")next=next.filter(x=>x!=="school");
+      if(next.length>=2)return toast("يمكنك اختيار حالتين فقط");
+      answers.roles=[...next,role];
+    }
+    renderStep();return;
+  }
+  if(e.target.dataset.goal){answers.goal=e.target.dataset.goal;renderStep()}
+});
+$("#nextStep").onclick=async()=>{const invalid=$("#questionBody input:invalid");if(invalid){invalid.reportValidity();return}collect();if(step===0&&!(answers.roles||[]).length)return alert("اختر وضعك الحالي أولًا.");if(step===2&&!answers.goal)return alert("اختر هدفك أولًا.");if(step<steps.length-1){step++;renderStep()}else{if(!answers.aiConsent)return alert("يجب الموافقة على استخدام البيانات لإنشاء الخطة.");await generatePlan()}};
 $("#prevStep").onclick=()=>{collect();step--;renderStep()};
 async function generatePlan(){
   show("#analyzing");
@@ -183,7 +217,7 @@ async function generatePlan(){
 const modalSchemas={
   event:{title:"موعد جديد",fields:[["title","العنوان","text"],["type","النوع","select","محاضرة|كويز|First|Second|Mid|Final|مشروع|واجب|شخصي"],["course","المادة","text"],["date","التاريخ","date"],["time","الوقت","time"],["location","المكان","text"],["notes","ملاحظات","textarea"]]},
   course:{title:"مادة جديدة",fields:[["name","اسم المادة","text"],["instructor","المدرس","text"],["hours","الساعات","number"],["first","First","number"],["second","Second / Mid","number"],["projects","مشاريع وأعمال","number"],["final","Final","number"],["total","العلامة المستهدفة","number"]]},
-  task:{title:"مهمة جديدة",fields:[["title","المهمة","text"],["category","التصنيف","select","دراسة|مشروع|شخصي|صحة"],["date","الموعد النهائي","date"],["priority","الأولوية","select","عالية|متوسطة|منخفضة"],["notes","تفاصيل","textarea"]]},
+  task:{title:"مهمة جديدة",fields:[["title","المهمة","text"],["category","التصنيف","select","دراسة|عمل|مشروع|شخصي|صحة"],["date","الموعد النهائي","date"],["priority","الأولوية","select","عالية|متوسطة|منخفضة"],["notes","تفاصيل","textarea"]]},
   habit:{title:"عادة جديدة",fields:[["name","اسم العادة","text"],["target","الهدف اليومي","number"],["unit","الوحدة","text"]]},
   expense:{title:"حركة مالية",fields:[["type","النوع","select","مصروف|دخل"],["category","التصنيف","select","طعام|مواصلات|جامعة|جيم|ترفيه|دخل|أخرى"],["amount","المبلغ","number"],["date","التاريخ","date"],["notes","ملاحظات","text"]]},
   progress:{title:"تسجيل التقدم",fields:[["date","التاريخ","date"],["weight","الوزن","number"],["waist","محيط الخصر (سم)","number"],["studyHours","ساعات الدراسة","number"],["sleepHours","ساعات النوم","number"],["note","ملاحظة","text"]]},
@@ -245,15 +279,30 @@ function renderCalendar(){
   const names=["أحد","اثنين","ثلاثاء","أربعاء","خميس","جمعة","سبت"];
   let days="";
   for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const key=dateKey(d),dayEvents=events.filter(e=>e.date===key);days+=`<div class="calendar-day ${d.getMonth()!==m?"out":""} ${key===today()?"today":""}"><b>${d.getDate()}</b>${dayEvents.slice(0,3).map(e=>`<span class="event-dot ${["كويز","First","Second","Mid","Final"].includes(e.type)?"exam":e.type==="مشروع"?"project":""}">${esc(e.title)}</span>`).join("")}</div>`}
-  return `<div class="hero"><div><h1>التقويم الجامعي</h1><p>كويزات، امتحانات، مشاريع ومحاضرات.</p></div><button class="primary" data-add="event">＋ موعد</button></div>
+  const title=hasRole("school")?"التقويم المدرسي":hasRole("university")?"التقويم الجامعي":"التقويم والمواعيد";
+  const subtitle=isStudying()?"اختبارات، واجبات، مشاريع ومواعيد مهمة.":"دوام، مقابلات، التزامات ومواعيد شخصية.";
+  return `<div class="hero"><div><h1>${title}</h1><p>${subtitle}</p></div><button class="primary" data-add="event">＋ موعد</button></div>
   <article class="panel" style="margin-top:20px"><div class="calendar-head"><button class="secondary" data-month="-1">‹</button><h2>${new Intl.DateTimeFormat("ar-JO",{month:"long",year:"numeric"}).format(calendarDate)}</h2><button class="secondary" data-month="1">›</button></div><div class="calendar-grid">${names.map(n=>`<b class="muted">${n}</b>`).join("")}${days}</div></article>
   <article class="panel" style="margin-top:14px">${sectionHeader("كل المواعيد","event")}${events.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).map(x=>row(x,{time:x.date,title:x.title,details:`${x.type} • ${x.course||""} ${x.time||""}`,collection:"events",type:"event"})).join("")||empty("لا توجد مواعيد")}</article>`;
 }
 function renderStudy(){
   const w=workspace();
-  return `<div class="hero"><div><h1>الدراسة والمواد</h1><p>تابع علاماتك ومشاريعك واعرف تقدمك.</p></div><button class="primary" data-add="course">＋ مادة</button></div>
+  const school=hasRole("school"),title=school?"المدرسة والمواد":"الجامعة والمواد",subtitle=school?"تابع موادك وواجباتك واختباراتك المدرسية.":"تابع علاماتك ومشاريعك وموادك الجامعية.";
+  const studyTasks=w.tasks.filter(x=>["دراسة","مشروع"].includes(x.category));
+  return `<div class="hero"><div><h1>${title}</h1><p>${subtitle}</p></div><button class="primary" data-add="course">＋ مادة</button></div>
   <div class="cards">${w.courses.map(c=>{const scored=Number(c.first)+Number(c.second)+Number(c.projects)+Number(c.final),target=Number(c.total||100);return `<article class="card"><span>${esc(c.instructor||"المادة")}</span><h2>${esc(c.name)}</h2><strong>${scored}/${target}</strong><small>${c.hours||0} ساعات • المتبقي للهدف ${Math.max(0,target-scored)}</small><div class="progress-track"><div class="progress-fill" style="width:${Math.min(100,scored/target*100)}%"></div></div><div class="toolbar"><button class="icon-btn" data-edit="course:${c.id}">تعديل</button><button class="icon-btn red" data-delete="courses:${c.id}">حذف</button></div></article>`}).join("")||empty("أضف موادك وعلاماتك")}</div>
-  <article class="panel" style="margin-top:14px">${sectionHeader("المهام والمشاريع","task")}${w.tasks.map(x=>`<div class="row"><button class="check ${x.done?"done":""}" data-task="${x.id}">✓</button><div><b>${esc(x.title)}</b><small>${esc(x.category)} • ${esc(x.date||"بدون موعد")} • ${esc(x.priority)}</small></div><div class="row-actions"><button class="icon-btn" data-edit="task:${x.id}">✎</button><button class="icon-btn red" data-delete="tasks:${x.id}">×</button></div></div>`).join("")||empty("أضف واجباتك ومشاريعك")}</article>`;
+  <article class="panel" style="margin-top:14px">${sectionHeader("المهام والمشاريع","task")}${studyTasks.map(x=>`<div class="row"><button class="check ${x.done?"done":""}" data-task="${x.id}">✓</button><div><b>${esc(x.title)}</b><small>${esc(x.category)} • ${esc(x.date||"بدون موعد")} • ${esc(x.priority)}</small></div><div class="row-actions"><button class="icon-btn" data-edit="task:${x.id}">✎</button><button class="icon-btn red" data-delete="tasks:${x.id}">×</button></div></div>`).join("")||empty("أضف واجباتك ومشاريعك")}</article>`;
+}
+function renderWork(){
+  const a=userData.answers||{},w=workspace(),employee=hasRole("employee");
+  const workTasks=w.tasks.filter(x=>x.category==="عمل");
+  const cards=employee
+    ?[["المسمى الوظيفي",a.jobTitle||"أضفه من معلوماتك"],["أيام العمل",a.workDays||"غير محددة"],["ساعات الدوام",a.workSchedule||"غير محددة"]]
+    :[["الفرصة المطلوبة",a.desiredJob||"حدد المجال المناسب"],["وقت البحث اليومي",a.jobSearchHours?`${a.jobSearchHours} ساعات`:"غير محدد"],["المهارات",a.jobSkills||"أضف مهاراتك"]];
+  return `<div class="hero"><div><h1>${employee?"العمل والأهداف":"البحث عن عمل"}</h1><p>${employee?"نظّم دوامك ومهامك المهنية بدون أن تختلط ببقية يومك.":"حوّل البحث عن فرصة إلى خطوات يومية واضحة وقابلة للإنجاز."}</p></div><button class="primary" data-add="task">＋ مهمة عمل</button></div>
+  <div class="grid3 work-overview">${cards.map(([label,value])=>`<article class="card"><span>${label}</span><strong>${esc(value)}</strong><small>من معلوماتك الحالية</small></article>`).join("")}</div>
+  <div class="grid2"><article class="panel"><h2>${employee?"أهداف العمل":"خطة التطور والبحث"}</h2><p class="work-copy">${esc(employee?a.workGoals||"أضف أهدافك المهنية من صفحة الإعدادات.":a.jobSkills||"أضف المهارات التي تريد تطويرها والوظائف التي تبحث عنها.")}</p></article>
+  <article class="panel">${sectionHeader("مهام العمل","task")}${workTasks.map(x=>`<div class="row"><button class="check ${x.done?"done":""}" data-task="${x.id}">✓</button><div><b>${esc(x.title)}</b><small>${esc(x.date||"بدون موعد")} • ${esc(x.priority||"متوسطة")}</small></div><div class="row-actions"><button class="icon-btn" data-edit="task:${x.id}">✎</button><button class="icon-btn red" data-delete="tasks:${x.id}">×</button></div></div>`).join("")||empty("أضف أول مهمة مرتبطة بالعمل")}</article></div>`;
 }
 function renderNutrition(){
   const p=plan(),goal=userData.answers?.goal||"تنظيم الحياة",checks=workspace().mealChecks;
@@ -298,12 +347,20 @@ function renderAssistant(){
 }
 function renderSettings(){
   const a=userData.answers||{};
-  const profile=[["◎","هدفك الحالي",a.goal],["◉","العمر",a.age?`${a.age} سنة`:"—"],["↕","الطول",a.height?`${a.height} سم`:"—"],["◆","الوزن الحالي",a.weight?`${a.weight} كغم`:"—"],["⌖","الوزن المستهدف",a.targetWeight?`${a.targetWeight} كغم`:"—"],["◷","النوم",a.sleep&&a.wake?`من ${a.sleep} إلى ${a.wake}`:"—"],["↗","مستوى النشاط",a.activityLevel||"—"],["♨","النظام الغذائي",a.dietType||"—"]];
+  const roleLabels=(a.roles||[]).map(r=>roleOptions.find(x=>x[0]===r)?.[1]).filter(Boolean).join(" و ");
+  const profile=[["▦","وضعك الحالي",roleLabels||"—"],["◎","هدفك الحالي",a.goal],["◉","العمر",a.age?`${a.age} سنة`:"—"],["↕","الطول",a.height?`${a.height} سم`:"—"],["◆","الوزن الحالي",a.weight?`${a.weight} كغم`:"—"],["⌖","الوزن المستهدف",a.targetWeight?`${a.targetWeight} كغم`:"—"],["◷","النوم",a.sleep&&a.wake?`من ${a.sleep} إلى ${a.wake}`:"—"],["↗","مستوى النشاط",a.activityLevel||"—"],["♨","النظام الغذائي",a.dietType||"—"]];
   return `<div class="hero"><div><h1>الإعدادات والبيانات</h1><p>راجع معلوماتك وحدّث خطتك في أي وقت.</p></div></div><div class="settings-layout"><article class="panel profile-panel"><div class="section-title"><div><span class="badge">ملفي الشخصي</span><h2>معلوماتي الأساسية</h2></div><button class="primary compact" id="restartOnboarding">تعديل المعلومات</button></div><div class="profile-grid">${profile.map(([icon,label,value])=>`<div class="profile-item"><i>${icon}</i><div><span>${label}</span><b>${esc(value)}</b></div></div>`).join("")}</div></article><article class="panel account-panel"><span class="badge green">حسابك بأمان</span><h2>أنت المتحكم</h2><p class="muted">معلوماتك مخصصة لك ولا تظهر للمستخدمين الآخرين. يمكنك تحديث بياناتك وخطتك متى أردت.</p><div class="account-points"><span>✓ خطتك مرتبطة بحسابك</span><span>✓ يمكنك تعديل معلوماتك في أي وقت</span><span>✓ لا نستخدم كلمة مرورك في إنشاء الخطة</span></div><button class="danger" id="logoutSettings">تسجيل الخروج</button></article></div>`;
 }
 
-const renderers={home:renderHome,today:renderToday,calendar:renderCalendar,study:renderStudy,nutrition:renderNutrition,workouts:renderWorkouts,habits:renderHabits,expenses:renderExpenses,progress:renderProgress,notes:renderNotes,assistant:renderAssistant,settings:renderSettings};
+const renderers={home:renderHome,today:renderToday,calendar:renderCalendar,study:renderStudy,work:renderWork,nutrition:renderNutrition,workouts:renderWorkouts,habits:renderHabits,expenses:renderExpenses,progress:renderProgress,notes:renderNotes,assistant:renderAssistant,settings:renderSettings};
 function renderDashboard(next="home"){
+  const studying=isStudying(),workContext=hasWorkContext();
+  const studyButton=$('[data-view="study"]'),workButton=$('[data-view="work"]');
+  studyButton.classList.toggle("hidden",!studying);
+  workButton.classList.toggle("hidden",!workContext);
+  if(studyButton)studyButton.textContent=hasRole("school")?"▣ المدرسة":hasRole("university")?"▣ الجامعة":"▣ التعلّم";
+  if(workButton)workButton.textContent=hasRole("employee")?"▤ العمل":"▤ فرص العمل";
+  if((next==="study"&&!studying)||(next==="work"&&!workContext))next="home";
   view=next;workspace();
   const n=currentUser.displayName||userData.name||"صديقي";
   $("#userGreeting").textContent=`مرحبًا ${n}`;
