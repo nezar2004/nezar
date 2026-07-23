@@ -6,6 +6,47 @@ const config={apiKey:"AIzaSyD0aqTFxCsXOROKXaLZE9IV0zGmWCqsKQ8",authDomain:"hayat
 const AI_ENDPOINT="https://hayati-ai.nezarcaht.workers.dev";
 // ارفع هذا الرقم فقط عندما يحتاج التحديث إلى إعادة تعبئة بيانات جميع المستخدمين.
 const PROFILE_VERSION=4;
+const DEFAULT_WORKOUT_SPLIT=[
+  {day:"اليوم الأول",focus:"صدر وترايسبس",exercises:[
+    ["Machine Chest Press","جهاز ضغط الصدر","الصدر",4,"8-12",90],
+    ["Incline Chest Press Machine","جهاز ضغط الصدر العلوي","الصدر العلوي",4,"8-12",90],
+    ["Pec Deck Machine","جهاز تفتيح الصدر","الصدر",3,"12-15",60],
+    ["Cable Crossover","جهاز الكيبل","الصدر",3,"12-15",60],
+    ["Assisted Chest Dips","جهاز المتوازي المساعد","الصدر",3,"8-12",75],
+    ["Rope Pushdown","دفع الحبل للأسفل","الترايسبس",3,"10-15",60],
+    ["Overhead Cable Extension","تمديد فوق الرأس بالكيبل","الترايسبس",3,"10-12",60],
+    ["Triceps Dip Machine","جهاز غطس الترايسبس","الترايسبس",3,"8-12",75]
+  ]},
+  {day:"اليوم الثاني",focus:"ظهر وبايسبس",exercises:[
+    ["Lat Pulldown","جهاز السحب الأمامي","الظهر",4,"8-12",90],
+    ["Seated Cable Row","التجديف جالسًا بالكيبل","الظهر",4,"8-12",90],
+    ["Chest Supported Row Machine","جهاز تجديف مع تثبيت الصدر","الظهر",3,"10-12",75],
+    ["Single Arm Cable Row","سحب كيبل بذراع واحدة","الظهر",3,"10-12",60],
+    ["Straight Arm Pulldown","سحب كيبل بذراع مستقيمة","الظهر",3,"12-15",60],
+    ["Preacher Curl Machine","جهاز بايسبس الواعظ","البايسبس",3,"8-12",60],
+    ["Cable Curl","بايسبس بالكيبل","البايسبس",3,"10-12",60],
+    ["Dumbbell Hammer Curl","هامر بالدمبل","البايسبس",3,"10-12",60]
+  ]},
+  {day:"اليوم الثالث",focus:"أكتاف وترابيس وسواعد",exercises:[
+    ["Shoulder Press Machine","جهاز ضغط الكتف","الأكتاف",4,"8-12",90],
+    ["Lateral Raise Machine","جهاز الرفرفة الجانبية","الكتف الجانبي",4,"12-15",60],
+    ["Reverse Pec Deck","جهاز الكتف الخلفي","الكتف الخلفي",3,"12-15",60],
+    ["Cable Front Raise","رفرفة أمامية بالكيبل","الكتف الأمامي",3,"10-12",60],
+    ["Cable Face Pull","سحب الحبل نحو الوجه","الكتف الخلفي",3,"12-15",60],
+    ["Shrug Machine","جهاز هز الكتف","الترابيس",4,"10-15",75],
+    ["Seated Wrist Curl","لف الرسغ بالدمبل","السواعد",3,"15-20",45],
+    ["Reverse Wrist Curl","لف الرسغ العكسي","السواعد",3,"15-20",45],
+    ["Reverse Cable Curl","بايسبس عكسي بالكيبل","السواعد",3,"12-15",60]
+  ]},
+  {day:"اليوم الرابع",focus:"أرجل وبطن",exercises:[
+    ["Hack Squat Machine","جهاز الهاك سكوات","الأرجل",4,"8-12",120],
+    ["Leg Press","جهاز ضغط الأرجل","الأرجل",4,"10-15",90],
+    ["Leg Curl Machine","جهاز ثني الأرجل الخلفية","خلفية الفخذ",4,"10-15",75],
+    ["Standing Calf Raise Machine","جهاز السمانة","السمانة",4,"12-20",60],
+    ["Cable Crunch","كرنش بالكيبل","البطن",3,"12-20",45],
+    ["Captain's Chair Knee Raise","جهاز رفع الركبتين","البطن",3,"10-15",45]
+  ]}
+].map(day=>({...day,exercises:day.exercises.map(([englishName,machine,muscle,sets,reps,restSeconds])=>({name:`${machine} — ${englishName}`,machine,muscle,sets,reps,restSeconds,notes:"استخدم وزنًا يسمح بأداء صحيح وتحكم كامل بالحركة"}))}));
 const fb=initializeApp(config),auth=getAuth(fb),db=getFirestore(fb);
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const screens=["#loader","#auth","#onboarding","#analyzing","#dashboard"];
@@ -97,7 +138,8 @@ async function generatePlan(){
   show("#analyzing");
   try{
     const token=await currentUser.getIdToken(true);
-    const response=await fetch(AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({answers})});
+    const planAnswers={...answers,workoutTemplate:DEFAULT_WORKOUT_SPLIT,workoutInstructions:"التزم بهذه التقسيمة وأعداد التمارين والجولات والتكرارات والأجهزة. عدّل التمرين فقط عند وجود إصابة أو عدم توفر جهاز، ولا تقترح أوزانًا قصوى."};
+    const response=await fetch(AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({answers:planAnswers})});
     const result=await response.json();
     if(!response.ok||!result.plan)throw new Error(result.error||"تعذر إنشاء الخطة");
     await setDoc(doc(db,"users",currentUser.uid),{answers,plan:result.plan,onboardingComplete:true,profileVersion:PROFILE_VERSION},{merge:true});
