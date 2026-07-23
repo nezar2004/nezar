@@ -191,7 +191,11 @@ function renderNutrition(){
 function renderWorkouts(){
   const checks=workspace().workoutChecks;
   return `<div class="hero"><div><h1>التمارين</h1><p>برنامجك الأسبوعي حسب هدفك وعدد أيامك.</p></div><span class="badge">${userData.answers?.trainingDays||0} أيام أسبوعيًا</span></div>
-  <div class="cards">${plan().workouts.map((x,i)=>`<article class="card"><span>${esc(x.day)}</span><h2>${esc(x.focus)}</h2><strong>${x.durationMinutes} دقيقة</strong><p class="muted">${esc(x.notes)}</p><button class="check ${checks[i]?"done":""}" data-workout="${i}">✓</button></article>`).join("")||empty("لا يوجد برنامج تمارين")}</div>`;
+  <div class="grid2">${plan().workouts.map((x,i)=>`<article class="panel workout-card">
+    <div class="section-title"><div><span class="badge">${esc(x.day)}</span><h2>${esc(x.focus)}</h2></div><strong>${x.durationMinutes} دقيقة</strong></div>
+    <div class="exercise-list">${Array.isArray(x.exercises)&&x.exercises.length?x.exercises.map((ex,n)=>`<div class="exercise-item"><b>${n+1}. ${esc(ex.name)}</b><small>${esc(ex.muscle||"")} • ${esc(ex.sets||"—")} جولات × ${esc(ex.reps||"—")} تكرار • راحة ${esc(ex.restSeconds||60)} ثانية</small>${ex.notes?`<small>${esc(ex.notes)}</small>`:""}</div>`).join(""):`<p class="muted">تفاصيل التمارين ستظهر بعد إعادة إنشاء الخطة بالنسخة الجديدة من المساعد.</p>`}</div>
+    <p class="muted">${esc(x.notes)}</p><button class="check ${checks[i]?"done":""}" data-workout="${i}">✓</button>
+  </article>`).join("")||empty("لا يوجد برنامج تمارين")}</div>`;
 }
 function renderHabits(){
   const habits=workspace().habits;
