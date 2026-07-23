@@ -1,6 +1,6 @@
-# حياتي مرتبة
+# وازن
 
-نسخة نظيفة تستخدم Firebase Authentication وFirestore وHosting، وتتصل بخدمة الذكاء الاصطناعي عبر Cloudflare Worker.
+وازن — خطتك الذكية للدراسة والتغذية والرياضة وتنظيم الحياة. يستخدم Firebase Authentication وFirestore وHosting، ويتصل بخدمة الذكاء الاصطناعي عبر Cloudflare Worker.
 
 ## الملفات
 
