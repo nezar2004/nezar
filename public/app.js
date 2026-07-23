@@ -114,7 +114,31 @@ $("#authForm").onsubmit=async e=>{
   }catch(e){$("#authError").textContent=`تعذر تسجيل الدخول: ${e.code||e.message}`}
 };
 $("#googleLogin").onclick=async()=>{try{$("#authError").textContent="";await persistenceReady;await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){$("#authError").textContent=`تعذر تسجيل Google: ${e.code||e.message}`}};
-$("#resetPassword").onclick=async()=>{try{if(!$("#email").value)return $("#authError").textContent="اكتب بريدك أولًا";await sendPasswordResetEmail(auth,$("#email").value);toast("تم إرسال رابط الاستعادة")}catch(e){$("#authError").textContent=e.code||e.message}};
+$("#resetPassword").onclick=()=>{
+  $("#resetEmail").value=$("#email").value.trim();
+  $("#resetStatus").classList.add("hidden");
+  $("#resetForm").classList.remove("hidden");
+  $("#resetEmail").focus();
+};
+$("#closeReset").onclick=()=>$("#resetForm").classList.add("hidden");
+$("#resetForm").onsubmit=async e=>{
+  e.preventDefault();
+  const email=$("#resetEmail").value.trim().toLowerCase(),button=$("#sendReset"),status=$("#resetStatus");
+  if(!$("#resetEmail").checkValidity()){ $("#resetEmail").reportValidity();return }
+  button.disabled=true;button.textContent="جاري الإرسال...";
+  status.className="reset-status hidden";
+  try{
+    await sendPasswordResetEmail(auth,email,{url:"https://hayati-app-35028.web.app"});
+    status.className="reset-status success";
+    status.innerHTML=`<b>تم إرسال طلب الاستعادة إلى:</b><span dir="ltr">${esc(email)}</span><small>افتح الرسالة من Firebase، واضغط رابط تغيير كلمة المرور. إذا لم تجدها خلال دقائق، افحص Spam أو البريد غير المرغوب فيه وتأكد من كتابة العنوان بشكل صحيح.</small>`;
+  }catch(error){
+    const messages={"auth/invalid-email":"صيغة البريد الإلكتروني غير صحيحة.","auth/too-many-requests":"تمت محاولات كثيرة. انتظر قليلًا ثم حاول مجددًا.","auth/network-request-failed":"تعذر الاتصال بالإنترنت. تحقق من الشبكة وحاول مجددًا."};
+    status.className="reset-status failure";
+    status.textContent=messages[error.code]||`تعذر إرسال الرابط: ${error.code||error.message}`;
+  }finally{
+    button.disabled=false;button.textContent="إرسال رابط الاستعادة";
+  }
+};
 
 const steps=[
   {title:"بيانات الجسم الأساسية",desc:"نستخدمها لتقدير الاحتياج اليومي بشكل مناسب.",html:()=>`<div class="fields"><label>العمر<input id="age" type="number" min="16" max="90" required value="${answers.age||""}"></label><label>الطول (سم)<input id="height" type="number" min="120" max="230" required value="${answers.height||""}"></label><label>الوزن الحالي (كغم)<input id="weight" type="number" min="35" max="300" required step=".1" value="${answers.weight||""}"></label><label>الوزن المستهدف (كغم)<input id="targetWeight" type="number" min="35" max="300" required step=".1" value="${answers.targetWeight||""}"></label><label>محيط الخصر (اختياري)<input id="waist" type="number" min="40" max="220" step=".1" value="${answers.waist||""}"></label><label>الجنس<select id="gender"><option value="male">ذكر</option><option value="female">أنثى</option></select></label><label>مستوى النشاط<select id="activityLevel"><option>قليل الحركة</option><option>نشاط خفيف</option><option>نشاط متوسط</option><option>نشاط مرتفع</option></select></label><label>المدة المرغوبة للوصول للهدف<select id="goalPace"><option>بشكل تدريجي وآمن</option><option>بدون موعد محدد</option><option>خلال 3 أشهر</option><option>خلال 6 أشهر</option></select></label></div>`},
