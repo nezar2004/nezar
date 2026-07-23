@@ -6,14 +6,16 @@
   <meta name="theme-color" content="#07101f">
   <meta name="description" content="وازن — خطتك الذكية للدراسة والتغذية والرياضة وتنظيم الحياة">
   <title>وازن — خطتك الذكية لحياة أفضل</title>
-  <link rel="stylesheet" href="styles.css?v=pro-1">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="styles.css?v=pro-8">
 </head>
 <body>
   <div id="loader" class="screen center"><div class="spinner"></div><p>جاري التحميل...</p></div>
   <section id="auth" class="screen hidden">
-    <div class="auth-art"><div class="brand">✓</div><h1>حياتك، مرتبة بطريقتك</h1><p>الدراسة، الصحة، التغذية، الجيم والمصاريف في مكان واحد.</p></div>
+    <div class="auth-art"><img class="brand-logo" src="icon.svg" alt="وازن"><span class="eyebrow">كل حياتك في إيقاع واحد</span><h1>وازن يومك.<br>وحقق هدفك.</h1><p>خطة شخصية ذكية تجمع الدراسة، التغذية، الرياضة والمصاريف.</p><div class="auth-features"><span>✦ خطة بالذكاء الاصطناعي</span><span>✓ بياناتك محفوظة</span><span>↗ تقدم واضح</span></div></div>
     <div class="auth-card">
-      <div class="mini-brand"><i>✓</i><b>وازن</b></div>
+      <div class="mini-brand"><img src="icon.svg" alt=""><div><b>وازن</b><small>حياة أذكى كل يوم</small></div></div>
       <div class="tabs"><button class="active" data-auth-tab="login">تسجيل الدخول</button><button data-auth-tab="signup">حساب جديد</button></div>
       <form id="authForm">
         <label class="signup-only hidden">الاسم الكامل<input id="name" placeholder="اسمك"></label>
@@ -26,14 +28,14 @@
     </div>
   </section>
   <section id="onboarding" class="screen hidden">
-    <div class="onboard-shell"><header><div class="mini-brand"><i>✓</i><b>وازن</b></div><button id="logout1" class="text-btn">تسجيل الخروج</button></header>
+    <div class="onboard-shell"><header><div class="mini-brand"><img src="icon.svg" alt=""><div><b>وازن</b><small>نبني خطتك الشخصية</small></div></div><button id="logout1" class="text-btn">تسجيل الخروج</button></header>
       <div class="progress"><i id="progressBar"></i></div>
       <div class="question-card"><small id="stepLabel"></small><div id="questionBody"></div><div class="wizard-actions"><button id="prevStep" class="secondary">السابق</button><button id="nextStep" class="primary">التالي</button></div></div>
     </div>
   </section>
   <section id="analyzing" class="screen center hidden"><div class="ai-orb">✦</div><h1>نبني خطتك الشخصية</h1><p>يحلل الذكاء الاصطناعي إجاباتك ويرتب يومك الآن...</p><div class="analysis-steps"><span>✓ تحليل الهدف</span><span>✓ ترتيب المواعيد</span><span>◌ إنشاء الوجبات والتمارين</span></div></section>
   <section id="dashboard" class="hidden">
-    <aside><div class="mini-brand"><i>✓</i><b>وازن</b></div>
+    <aside><div class="mini-brand"><img src="icon.svg" alt=""><div><b>وازن</b><small>مركز يومك الذكي</small></div></div>
       <nav>
         <button class="active" data-view="home">⌂ الرئيسية</button><button data-view="today">☑ يومي</button><button data-view="calendar">▦ التقويم</button><button data-view="study">▣ الدراسة</button><button data-view="nutrition">♨ التغذية</button><button data-view="workouts">◆ التمارين</button><button data-view="habits">◷ العادات</button><button data-view="expenses">▥ المصاريف</button><button data-view="progress">↗ التقدم</button><button data-view="notes">✎ الملاحظات</button><button data-view="assistant">✦ المساعد الذكي</button><button data-view="settings">⚙ الإعدادات</button>
       </nav><button id="logout2" class="logout">تسجيل الخروج</button>
@@ -41,6 +43,6 @@
     <main><header><button id="menu">☰</button><div><b id="userGreeting"></b><small id="headerSubtitle">خطتك الشخصية جاهزة للتنفيذ</small></div><button id="quickAdd" class="primary compact">＋ إضافة سريعة</button></header><div id="view"></div></main>
   </section>
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-card"><div class="modal-head"><h2 id="modalTitle">إضافة</h2><button id="modalClose">×</button></div><form id="modalForm"><div id="modalFields"></div><div class="modal-actions"><button type="button" id="modalCancel" class="secondary">إلغاء</button><button class="primary">حفظ</button></div></form></div></div>
-  <div id="toast"></div><script type="module" src="app.js?v=pro-7"></script>
+  <div id="toast"></div><script type="module" src="app.js?v=pro-8"></script>
 </body>
 </html>
