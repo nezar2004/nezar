@@ -1,7 +1,45 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>حياتي مرتبة</title><link rel="stylesheet" href="styles.css"></head><body>
-<div id="loader" class="screen center"><div class="spinner"></div><p>جاري التحميل...</p></div>
-<section id="auth" class="screen hidden"><div class="auth-art"><div class="brand">✓</div><h1>حياتك، مرتبة بطريقتك</h1><p>خطة شخصية ذكية للدراسة، الصحة، الجيم والمصاريف.</p></div><div class="auth-card"><div class="mini-brand"><i>✓</i><b>حياتي مرتبة</b></div><div class="tabs"><button class="active" data-auth-tab="login">تسجيل الدخول</button><button data-auth-tab="signup">حساب جديد</button></div><form id="authForm"><label>الاسم الكامل<input id="name" class="signup-only hidden" placeholder="اسمك"></label><label>البريد الإلكتروني<input id="email" type="email" required placeholder="name@example.com"></label><label>كلمة المرور<input id="password" type="password" required minlength="6" placeholder="••••••••"></label><button class="primary" id="authSubmit">تسجيل الدخول</button></form><button class="google" id="googleLogin">G المتابعة بواسطة Google</button><button class="text-btn" id="resetPassword">نسيت كلمة المرور؟</button><p id="authError" class="error"></p></div></section>
-<section id="onboarding" class="screen hidden"><div class="onboard-shell"><header><div class="mini-brand"><i>✓</i><b>حياتي مرتبة</b></div><button id="logout1" class="text-btn">تسجيل الخروج</button></header><div class="progress"><i id="progressBar"></i></div><div class="question-card"><small id="stepLabel"></small><div id="questionBody"></div><div class="wizard-actions"><button id="prevStep" class="secondary">السابق</button><button id="nextStep" class="primary">التالي</button></div></div></div></section>
-<section id="analyzing" class="screen center hidden"><div class="ai-orb">✦</div><h1>نبني خطتك الشخصية</h1><p>يحلل الذكاء الاصطناعي إجاباتك ويرتب يومك الآن...</p><div class="analysis-steps"><span>✓ تحليل الهدف</span><span>✓ ترتيب المواعيد</span><span>◌ إنشاء الوجبات والتمارين</span></div></section>
-<section id="dashboard" class="hidden"><aside><div class="mini-brand"><i>✓</i><b>حياتي مرتبة</b></div><nav><button class="active" data-view="home">⌂ الرئيسية</button><button data-view="schedule">□ الجدول</button><button data-view="meals">♨ الوجبات</button><button data-view="workouts">◆ التمارين</button><button data-view="settings">⚙ بياناتي</button></nav><button id="logout2" class="logout">تسجيل الخروج</button></aside><main><header><button id="menu">☰</button><div><b id="userGreeting"></b><small>خطتك الشخصية جاهزة للتنفيذ</small></div><button id="regenerate" class="secondary">✦ إعادة التحليل</button></header><div id="view"></div></main></section>
-<div id="toast"></div><script type="module" src="app.js?v=clean-1"></script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07101f">
+  <title>حياتي مرتبة</title>
+  <link rel="stylesheet" href="styles.css?v=pro-1">
+</head>
+<body>
+  <div id="loader" class="screen center"><div class="spinner"></div><p>جاري التحميل...</p></div>
+  <section id="auth" class="screen hidden">
+    <div class="auth-art"><div class="brand">✓</div><h1>حياتك، مرتبة بطريقتك</h1><p>الدراسة، الصحة، التغذية، الجيم والمصاريف في مكان واحد.</p></div>
+    <div class="auth-card">
+      <div class="mini-brand"><i>✓</i><b>حياتي مرتبة</b></div>
+      <div class="tabs"><button class="active" data-auth-tab="login">تسجيل الدخول</button><button data-auth-tab="signup">حساب جديد</button></div>
+      <form id="authForm">
+        <label class="signup-only hidden">الاسم الكامل<input id="name" placeholder="اسمك"></label>
+        <label>البريد الإلكتروني<input id="email" type="email" required placeholder="name@example.com"></label>
+        <label>كلمة المرور<input id="password" type="password" required minlength="6" placeholder="••••••••"></label>
+        <button class="primary" id="authSubmit">تسجيل الدخول</button>
+      </form>
+      <button class="google" id="googleLogin">G المتابعة بواسطة Google</button>
+      <button class="text-btn" id="resetPassword">نسيت كلمة المرور؟</button><p id="authError" class="error"></p>
+    </div>
+  </section>
+  <section id="onboarding" class="screen hidden">
+    <div class="onboard-shell"><header><div class="mini-brand"><i>✓</i><b>حياتي مرتبة</b></div><button id="logout1" class="text-btn">تسجيل الخروج</button></header>
+      <div class="progress"><i id="progressBar"></i></div>
+      <div class="question-card"><small id="stepLabel"></small><div id="questionBody"></div><div class="wizard-actions"><button id="prevStep" class="secondary">السابق</button><button id="nextStep" class="primary">التالي</button></div></div>
+    </div>
+  </section>
+  <section id="analyzing" class="screen center hidden"><div class="ai-orb">✦</div><h1>نبني خطتك الشخصية</h1><p>يحلل الذكاء الاصطناعي إجاباتك ويرتب يومك الآن...</p><div class="analysis-steps"><span>✓ تحليل الهدف</span><span>✓ ترتيب المواعيد</span><span>◌ إنشاء الوجبات والتمارين</span></div></section>
+  <section id="dashboard" class="hidden">
+    <aside><div class="mini-brand"><i>✓</i><b>حياتي مرتبة</b></div>
+      <nav>
+        <button class="active" data-view="home">⌂ الرئيسية</button><button data-view="today">☑ يومي</button><button data-view="calendar">▦ التقويم</button><button data-view="study">▣ الدراسة</button><button data-view="nutrition">♨ التغذية</button><button data-view="workouts">◆ التمارين</button><button data-view="habits">◷ العادات</button><button data-view="expenses">▥ المصاريف</button><button data-view="progress">↗ التقدم</button><button data-view="notes">✎ الملاحظات</button><button data-view="assistant">✦ المساعد الذكي</button><button data-view="settings">⚙ الإعدادات</button>
+      </nav><button id="logout2" class="logout">تسجيل الخروج</button>
+    </aside>
+    <main><header><button id="menu">☰</button><div><b id="userGreeting"></b><small id="headerSubtitle">خطتك الشخصية جاهزة للتنفيذ</small></div><button id="quickAdd" class="primary compact">＋ إضافة سريعة</button></header><div id="view"></div></main>
+  </section>
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-card"><div class="modal-head"><h2 id="modalTitle">إضافة</h2><button id="modalClose">×</button></div><form id="modalForm"><div id="modalFields"></div><div class="modal-actions"><button type="button" id="modalCancel" class="secondary">إلغاء</button><button class="primary">حفظ</button></div></form></div></div>
+  <div id="toast"></div><script type="module" src="app.js?v=pro-1"></script>
+</body>
+</html>
