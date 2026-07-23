@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, updateProfile, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
 const config={apiKey:"AIzaSyD0aqTFxCsXOROKXaLZE9IV0zGmWCqsKQ8",authDomain:"hayati-app-35028.firebaseapp.com",projectId:"hayati-app-35028",storageBucket:"hayati-app-35028.firebasestorage.app",messagingSenderId:"216794693163",appId:"1:216794693163:web:e864c50ad01fde5f1ab46e"};
@@ -48,13 +48,14 @@ const DEFAULT_WORKOUT_SPLIT=[
   ]}
 ].map(day=>({...day,exercises:day.exercises.map(([englishName,machine,muscle,sets,reps,restSeconds])=>({name:`${machine} — ${englishName}`,machine,muscle,sets,reps,restSeconds,notes:"استخدم وزنًا يسمح بأداء صحيح وتحكم كامل بالحركة"}))}));
 const fb=initializeApp(config),auth=getAuth(fb),db=getFirestore(fb);
+const persistenceReady=setPersistence(auth,browserSessionPersistence);
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const screens=["#loader","#auth","#onboarding","#analyzing","#dashboard"];
 const dateKey=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const today=()=>dateKey();
 const id=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`;
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let mode="login",step=0,currentUser=null,userData={},answers={},view="home",calendarDate=new Date(),modalState=null,expandedWorkout=null;
+let mode="login",step=0,currentUser=null,userData={},answers={},view="home",calendarDate=new Date(),modalState=null,expandedWorkout=null,authBootChecked=false;
 
 const emptyWorkspace=()=>({
   events:[],courses:[],tasks:[],habits:[
@@ -71,6 +72,12 @@ function formatDate(d){return new Intl.DateTimeFormat("ar-JO",{day:"numeric",mon
 function money(n){return `${Number(n||0).toFixed(2)} د.أ`}
 
 onAuthStateChanged(auth,async user=>{
+  if(!authBootChecked){
+    authBootChecked=true;
+    const started=sessionStorage.getItem("wazen-session-started")==="1";
+    sessionStorage.setItem("wazen-session-started","1");
+    if(user&&!started){await signOut(auth);show("#auth");return}
+  }
   currentUser=user;
   if(!user)return show("#auth");
   try{
@@ -98,6 +105,7 @@ $$("[data-auth-tab]").forEach(b=>b.onclick=()=>{
 $("#authForm").onsubmit=async e=>{
   e.preventDefault();$("#authError").textContent="";
   try{
+    await persistenceReady;
     if(mode==="signup"){
       const c=await createUserWithEmailAndPassword(auth,$("#email").value,$("#password").value);
       await updateProfile(c.user,{displayName:$("#name").value});
@@ -105,7 +113,7 @@ $("#authForm").onsubmit=async e=>{
     }else await signInWithEmailAndPassword(auth,$("#email").value,$("#password").value);
   }catch(e){$("#authError").textContent=`تعذر تسجيل الدخول: ${e.code||e.message}`}
 };
-$("#googleLogin").onclick=async()=>{try{$("#authError").textContent="";await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){$("#authError").textContent=`تعذر تسجيل Google: ${e.code||e.message}`}};
+$("#googleLogin").onclick=async()=>{try{$("#authError").textContent="";await persistenceReady;await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){$("#authError").textContent=`تعذر تسجيل Google: ${e.code||e.message}`}};
 $("#resetPassword").onclick=async()=>{try{if(!$("#email").value)return $("#authError").textContent="اكتب بريدك أولًا";await sendPasswordResetEmail(auth,$("#email").value);toast("تم إرسال رابط الاستعادة")}catch(e){$("#authError").textContent=e.code||e.message}};
 
 const steps=[
