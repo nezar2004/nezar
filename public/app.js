@@ -4,7 +4,8 @@ import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/fireb
 
 const config={apiKey:"AIzaSyD0aqTFxCsXOROKXaLZE9IV0zGmWCqsKQ8",authDomain:"hayati-app-35028.firebaseapp.com",projectId:"hayati-app-35028",storageBucket:"hayati-app-35028.firebasestorage.app",messagingSenderId:"216794693163",appId:"1:216794693163:web:e864c50ad01fde5f1ab46e"};
 const AI_ENDPOINT="https://hayati-ai.nezarcaht.workers.dev";
-const PROFILE_VERSION=2;
+// ارفع هذا الرقم فقط عندما يحتاج التحديث إلى إعادة تعبئة بيانات جميع المستخدمين.
+const PROFILE_VERSION=3;
 const fb=initializeApp(config),auth=getAuth(fb),db=getFirestore(fb);
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const screens=["#loader","#auth","#onboarding","#analyzing","#dashboard"];
@@ -34,7 +35,7 @@ onAuthStateChanged(auth,async user=>{
   try{
     const snap=await getDoc(doc(db,"users",user.uid));
     userData=snap.exists()?snap.data():{};
-    if(snap.exists()&&userData.onboardingComplete&&Number(userData.profileVersion||0)<PROFILE_VERSION){
+    if(snap.exists()&&Number(userData.profileVersion||0)<PROFILE_VERSION){
       await setDoc(doc(db,"users",user.uid),{onboardingComplete:false,profileVersion:PROFILE_VERSION,answers:{}},{merge:true});
       await signOut(auth);
       show("#auth");
