@@ -151,6 +151,7 @@ const activeAnswers=()=>Object.keys(answers||{}).length?answers:(userData?.answe
 const hasRole=role=>(activeAnswers().roles||[]).includes(role);
 const isStudying=()=>hasRole("school")||hasRole("university")||(hasRole("jobseeker")&&activeAnswers().stillStudying&&activeAnswers().stillStudying!=="لا أدرس حاليًا");
 const hasWorkContext=()=>hasRole("employee")||hasRole("jobseeker");
+const isTraining=()=>activeAnswers().trainingType!=="لا أتمرن حاليًا"&&Number(activeAnswers().trainingDays??1)>0;
 function contextQuestions(){
   const blocks=[];
   if(hasRole("school"))blocks.push(`<div class="context-block"><h3>بيانات المدرسة</h3><div class="fields"><label>الصف الدراسي<input id="schoolGrade" value="${answers.schoolGrade||""}" placeholder="مثال: الحادي عشر"></label><label>مواعيد المدرسة<input id="schoolSchedule" value="${answers.schoolSchedule||""}" placeholder="الأحد–الخميس، 8:00–2:00"></label><label>المواد الحالية<textarea id="schoolSubjects">${answers.schoolSubjects||""}</textarea></label><label>أقرب اختبارات أو واجبات<textarea id="schoolDeadlines">${answers.schoolDeadlines||""}</textarea></label></div></div>`);
@@ -167,7 +168,10 @@ const steps=[
   {title:"النوم والاستيقاظ",desc:"سنرتب يومك حولهما.",html:()=>`<div class="fields"><label>وقت النوم<input id="sleep" type="time" value="${answers.sleep||"00:00"}"></label><label>وقت الاستيقاظ<input id="wake" type="time" value="${answers.wake||"07:30"}"></label></div>`},
   {title:"دراستك وعملك",desc:"نعرض هذه الأسئلة بناءً على اختيارك في البداية.",html:contextQuestions},
   {title:"تفضيلات النظام الغذائي",desc:"لنقترح وجبات يمكنك الالتزام بها فعلًا.",html:()=>`<div class="fields"><label>نوع الغذاء<select id="dietType"><option>عادي</option><option>نباتي</option><option>قليل الكربوهيدرات</option><option>بدون ألبان</option><option>بدون جلوتين</option></select></label><label>عدد الوجبات يوميًا<input id="mealsPerDay" type="number" min="2" max="6" value="${answers.mealsPerDay||3}"></label><label>ميزانية الطعام اليومية (د.أ)<input id="foodBudget" type="number" min="0" step=".1" value="${answers.foodBudget||0}"></label><label>إمكانية الطبخ<select id="cookingAccess"><option>أستطيع الطبخ يوميًا</option><option>طبخ بسيط وسريع</option><option>أعتمد غالبًا على الطعام الجاهز</option></select></label><label>أكلات تحبها<textarea id="liked">${answers.liked||""}</textarea></label><label>أكلات لا تحبها<textarea id="disliked">${answers.disliked||""}</textarea></label><label class="full">الحساسية أو القيود الصحية المتعلقة بالطعام<textarea id="allergies" placeholder="اكتب لا يوجد إذا لم يكن لديك شيء">${answers.allergies||""}</textarea></label><label>المكملات المستخدمة<input id="supplements" value="${answers.supplements||""}" placeholder="مثل بروتين أو لا يوجد"></label></div>`},
-  {title:"التمارين والحركة",desc:"نربط الغذاء بالتمرين والتعافي.",html:()=>`<div class="fields"><label>أيام التمرين أسبوعيًا<input id="trainingDays" type="number" min="0" max="7" value="${answers.trainingDays??3}"></label><label>وقت التمرين المناسب<input id="trainingTime" type="time" value="${answers.trainingTime||"17:00"}"></label><label>نوع التمرين<select id="trainingType"><option>حديد</option><option>كارديو</option><option>حديد وكارديو</option><option>تمارين منزلية</option><option>لا أتمرن حاليًا</option></select></label><label>مدة الحصة بالدقائق<input id="trainingDuration" type="number" min="15" max="180" value="${answers.trainingDuration||60}"></label><label class="full">إصابات أو قيود حركية<textarea id="injuries" placeholder="اكتب لا يوجد إذا لم يكن لديك شيء">${answers.injuries||""}</textarea></label></div>`},
+  {title:"التمارين والحركة",desc:"نربط الغذاء بنشاطك الحالي بدقة.",html:()=>{
+    const noTraining=answers.trainingType==="لا أتمرن حاليًا";
+    return `<div class="fields training-fields"><label class="full">هل تتمرن حاليًا؟<select id="trainingType"><option>حديد</option><option>كارديو</option><option>حديد وكارديو</option><option>تمارين منزلية</option><option>لا أتمرن حاليًا</option></select></label>${noTraining?`<div class="no-training-message full"><i>✓</i><div><b>تمام، لن نضيف برنامج تمارين</b><small>سنركّز على التغذية والنوم والحركة اليومية الخفيفة، ويمكنك تغيير هذا الخيار لاحقًا.</small></div></div>`:`<label>أيام التمرين أسبوعيًا<input id="trainingDays" type="number" min="1" max="7" value="${answers.trainingDays||3}"></label><label>وقت التمرين المناسب<input id="trainingTime" type="time" value="${answers.trainingTime||"17:00"}"></label><label>مدة الحصة بالدقائق<input id="trainingDuration" type="number" min="15" max="180" value="${answers.trainingDuration||60}"></label><label>إصابات أو قيود حركية<textarea id="injuries" placeholder="اكتب لا يوجد إذا لم يكن لديك شيء">${answers.injuries||""}</textarea></label>`}</div>`;
+  }},
   {title:"المهام والعادات",desc:"ما الذي تريد إنجازه باستمرار؟",html:()=>`<div class="fields"><label>المهام الأساسية<textarea id="tasks">${answers.tasks||""}</textarea></label><label>العادات اليومية<textarea id="habits">${answers.habits||""}</textarea></label></div>`},
   {title:"الميزانية والملاحظات",desc:"آخر خطوة.",html:()=>`<div class="fields"><label>الدخل اليومي<input id="income" type="number" step=".1" value="${answers.income||0}"></label><label>المصروف اليومي<input id="expenses" type="number" step=".1" value="${answers.expenses||0}"></label></div><label>ملاحظات<textarea id="notes">${answers.notes||""}</textarea></label><label style="display:flex;grid-template-columns:auto 1fr;gap:10px;margin-top:18px;line-height:1.7"><input id="aiConsent" type="checkbox" style="width:18px" ${answers.aiConsent?"checked":""}><span>أوافق على استخدام إجاباتي لإنشاء خطتي الشخصية. لن تُستخدم كلمة المرور أو تُرسل ضمن التحليل.</span></label>`}
 ];
@@ -182,6 +186,12 @@ function renderStep(){
 function collect(){
   ["age","height","weight","targetWeight","waist","gender","activityLevel","goalPace","sleep","wake","schedule","schoolGrade","schoolSchedule","schoolSubjects","schoolDeadlines","major","universityYear","courses","examSystem","academicDeadlines","jobTitle","workDays","workSchedule","workGoals","stillStudying","desiredJob","jobSkills","jobSearchHours","dailyRoutine","dietType","mealsPerDay","foodBudget","cookingAccess","liked","disliked","allergies","supplements","trainingDays","trainingTime","trainingType","trainingDuration","injuries","studyHoursTarget","tasks","habits","income","expenses","notes"].forEach(k=>{const el=$("#"+k);if(el)answers[k]=el.type==="number"?Number(el.value):el.value});
   if($("#aiConsent"))answers.aiConsent=$("#aiConsent").checked;
+  if(answers.trainingType==="لا أتمرن حاليًا"){
+    answers.trainingDays=0;
+    delete answers.trainingTime;
+    delete answers.trainingDuration;
+    delete answers.injuries;
+  }
 }
 document.addEventListener("click",e=>{
   const roleButton=e.target.closest("[data-role]");
@@ -199,13 +209,22 @@ document.addEventListener("click",e=>{
   }
   if(e.target.dataset.goal){answers.goal=e.target.dataset.goal;renderStep()}
 });
+document.addEventListener("change",e=>{
+  if(e.target.id==="trainingType"){
+    answers.trainingType=e.target.value;
+    if(answers.trainingType==="لا أتمرن حاليًا")answers.trainingDays=0;
+    renderStep();
+  }
+});
 $("#nextStep").onclick=async()=>{const invalid=$("#questionBody input:invalid");if(invalid){invalid.reportValidity();return}collect();if(step===0&&!(answers.roles||[]).length)return alert("اختر وضعك الحالي أولًا.");if(step===2&&!answers.goal)return alert("اختر هدفك أولًا.");if(step<steps.length-1){step++;renderStep()}else{if(!answers.aiConsent)return alert("يجب الموافقة على استخدام البيانات لإنشاء الخطة.");await generatePlan()}};
 $("#prevStep").onclick=()=>{collect();step--;renderStep()};
 async function generatePlan(){
   show("#analyzing");
   try{
     const token=await currentUser.getIdToken(true);
-    const planAnswers={...answers,workoutTemplate:DEFAULT_WORKOUT_SPLIT,workoutInstructions:"التزم بهذه التقسيمة وأعداد التمارين والجولات والتكرارات والأجهزة. عدّل التمرين فقط عند وجود إصابة أو عدم توفر جهاز، ولا تقترح أوزانًا قصوى."};
+    const planAnswers=isTraining()
+      ?{...answers,workoutTemplate:DEFAULT_WORKOUT_SPLIT,workoutInstructions:"التزم بهذه التقسيمة وأعداد التمارين والجولات والتكرارات والأجهزة. عدّل التمرين فقط عند وجود إصابة أو عدم توفر جهاز، ولا تقترح أوزانًا قصوى."}
+      :{...answers,trainingDays:0,workoutInstructions:"المستخدم لا يتمرن حاليًا. لا تنشئ برنامج تمارين، ولا تقترح أجهزة أو جولات. اكتفِ بحركة يومية خفيفة اختيارية وآمنة."};
     const response=await fetch(AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({answers:planAnswers})});
     const result=await response.json();
     if(!response.ok||!result.plan)throw new Error(result.error||"تعذر إنشاء الخطة");
@@ -354,13 +373,14 @@ function renderSettings(){
 
 const renderers={home:renderHome,today:renderToday,calendar:renderCalendar,study:renderStudy,work:renderWork,nutrition:renderNutrition,workouts:renderWorkouts,habits:renderHabits,expenses:renderExpenses,progress:renderProgress,notes:renderNotes,assistant:renderAssistant,settings:renderSettings};
 function renderDashboard(next="home"){
-  const studying=isStudying(),workContext=hasWorkContext();
-  const studyButton=$('[data-view="study"]'),workButton=$('[data-view="work"]');
+  const studying=isStudying(),workContext=hasWorkContext(),training=isTraining();
+  const studyButton=$('[data-view="study"]'),workButton=$('[data-view="work"]'),workoutButton=$('[data-view="workouts"]');
   studyButton.classList.toggle("hidden",!studying);
   workButton.classList.toggle("hidden",!workContext);
+  workoutButton.classList.toggle("hidden",!training);
   if(studyButton)studyButton.textContent=hasRole("school")?"▣ المدرسة":hasRole("university")?"▣ الجامعة":"▣ التعلّم";
   if(workButton)workButton.textContent=hasRole("employee")?"▤ العمل":"▤ فرص العمل";
-  if((next==="study"&&!studying)||(next==="work"&&!workContext))next="home";
+  if((next==="study"&&!studying)||(next==="work"&&!workContext)||(next==="workouts"&&!training))next="home";
   view=next;workspace();
   const n=currentUser.displayName||userData.name||"صديقي";
   $("#userGreeting").textContent=`مرحبًا ${n}`;
