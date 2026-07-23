@@ -55,6 +55,7 @@ const dateKey=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padSt
 const today=()=>dateKey();
 const id=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`;
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const friendlyError=v=>String(v||"حدث خطأ غير متوقع").replace(/Firebase/gi,"الخدمة").replace(/Cloudflare/gi,"الخدمة").replace(/Gemini/gi,"المساعد الذكي");
 let mode="login",step=0,currentUser=null,userData={},answers={},view="home",calendarDate=new Date(),modalState=null,expandedWorkout=null,authBootChecked=false;
 
 const emptyWorkspace=()=>({
@@ -130,7 +131,7 @@ $("#resetForm").onsubmit=async e=>{
   try{
     await sendPasswordResetEmail(auth,email,{url:"https://hayati-app-35028.web.app"});
     status.className="reset-status success";
-    status.innerHTML=`<b>تم إرسال طلب الاستعادة إلى:</b><span dir="ltr">${esc(email)}</span><small>افتح الرسالة من Firebase، واضغط رابط تغيير كلمة المرور. إذا لم تجدها خلال دقائق، افحص Spam أو البريد غير المرغوب فيه وتأكد من كتابة العنوان بشكل صحيح.</small>`;
+    status.innerHTML=`<b>أرسلنا رابط الاستعادة إلى:</b><span dir="ltr">${esc(email)}</span><small>تحقق من البريد الوارد أو غير المرغوب فيه، ثم استخدم الرابط لتعيين كلمة مرور جديدة.</small>`;
   }catch(error){
     const messages={"auth/invalid-email":"صيغة البريد الإلكتروني غير صحيحة.","auth/too-many-requests":"تمت محاولات كثيرة. انتظر قليلًا ثم حاول مجددًا.","auth/network-request-failed":"تعذر الاتصال بالإنترنت. تحقق من الشبكة وحاول مجددًا."};
     status.className="reset-status failure";
@@ -149,7 +150,7 @@ const steps=[
   {title:"التمارين والحركة",desc:"نربط الغذاء بالتمرين والتعافي.",html:()=>`<div class="fields"><label>أيام التمرين أسبوعيًا<input id="trainingDays" type="number" min="0" max="7" value="${answers.trainingDays??3}"></label><label>وقت التمرين المناسب<input id="trainingTime" type="time" value="${answers.trainingTime||"17:00"}"></label><label>نوع التمرين<select id="trainingType"><option>حديد</option><option>كارديو</option><option>حديد وكارديو</option><option>تمارين منزلية</option><option>لا أتمرن حاليًا</option></select></label><label>مدة الحصة بالدقائق<input id="trainingDuration" type="number" min="15" max="180" value="${answers.trainingDuration||60}"></label><label class="full">إصابات أو قيود حركية<textarea id="injuries" placeholder="اكتب لا يوجد إذا لم يكن لديك شيء">${answers.injuries||""}</textarea></label></div>`},
   {title:"الدراسة والجامعة",desc:"حتى نرتب المذاكرة قبل الامتحانات والمشاريع.",html:()=>`<div class="fields"><label>المواد الحالية<textarea id="courses" placeholder="برمجة، رياضيات، قواعد بيانات...">${answers.courses||""}</textarea></label><label>نظام الامتحانات<select id="examSystem"><option>First + Second + Final</option><option>Mid + Final</option><option>كويزات + Mid + Final</option><option>نظام آخر</option></select></label><label>أقرب امتحانات أو مشاريع<textarea id="academicDeadlines" placeholder="اسم المادة، النوع، التاريخ">${answers.academicDeadlines||""}</textarea></label><label>ساعات الدراسة المستهدفة يوميًا<input id="studyHoursTarget" type="number" min="0" max="12" step=".5" value="${answers.studyHoursTarget||3}"></label></div>`},
   {title:"المهام والعادات",desc:"ما الذي تريد إنجازه باستمرار؟",html:()=>`<div class="fields"><label>المهام الأساسية<textarea id="tasks">${answers.tasks||""}</textarea></label><label>العادات اليومية<textarea id="habits">${answers.habits||""}</textarea></label></div>`},
-  {title:"الميزانية والملاحظات",desc:"آخر خطوة.",html:()=>`<div class="fields"><label>الدخل اليومي<input id="income" type="number" step=".1" value="${answers.income||0}"></label><label>المصروف اليومي<input id="expenses" type="number" step=".1" value="${answers.expenses||0}"></label></div><label>ملاحظات<textarea id="notes">${answers.notes||""}</textarea></label><label style="display:flex;grid-template-columns:auto 1fr;gap:10px;margin-top:18px;line-height:1.7"><input id="aiConsent" type="checkbox" style="width:18px" ${answers.aiConsent?"checked":""}><span>أوافق على إرسال إجاباتي إلى Cloudflare وGemini لإنشاء الخطة. لن تُرسل كلمة المرور.</span></label>`}
+  {title:"الميزانية والملاحظات",desc:"آخر خطوة.",html:()=>`<div class="fields"><label>الدخل اليومي<input id="income" type="number" step=".1" value="${answers.income||0}"></label><label>المصروف اليومي<input id="expenses" type="number" step=".1" value="${answers.expenses||0}"></label></div><label>ملاحظات<textarea id="notes">${answers.notes||""}</textarea></label><label style="display:flex;grid-template-columns:auto 1fr;gap:10px;margin-top:18px;line-height:1.7"><input id="aiConsent" type="checkbox" style="width:18px" ${answers.aiConsent?"checked":""}><span>أوافق على استخدام إجاباتي لإنشاء خطتي الشخصية. لن تُستخدم كلمة المرور أو تُرسل ضمن التحليل.</span></label>`}
 ];
 function renderStep(){
   $("#stepLabel").textContent=`الخطوة ${step+1} من ${steps.length}`;
@@ -176,7 +177,7 @@ async function generatePlan(){
     if(!response.ok||!result.plan)throw new Error(result.error||"تعذر إنشاء الخطة");
     await setDoc(doc(db,"users",currentUser.uid),{answers,plan:result.plan,onboardingComplete:true,profileVersion:PROFILE_VERSION},{merge:true});
     userData={...userData,answers,plan:result.plan,onboardingComplete:true,profileVersion:PROFILE_VERSION};show("#dashboard");renderDashboard("home");
-  }catch(e){console.error(e);show(userData.plan?"#dashboard":"#onboarding");if(userData.plan)renderDashboard(view);alert(`تعذر إنشاء الخطة: ${e.message}`)}
+  }catch(e){console.error(e);show(userData.plan?"#dashboard":"#onboarding");if(userData.plan)renderDashboard(view);alert(`تعذر إنشاء الخطة: ${friendlyError(e.message)}`)}
 }
 
 const modalSchemas={
@@ -297,7 +298,8 @@ function renderAssistant(){
 }
 function renderSettings(){
   const a=userData.answers||{};
-  return `<div class="hero"><div><h1>الإعدادات والبيانات</h1><p>تحكم في حسابك وخطتك.</p></div></div><div class="grid2"><article class="panel"><h2>ملفي</h2>${[["الهدف",a.goal],["العمر",a.age],["الطول",`${a.height} سم`],["الوزن",`${a.weight} كغم`],["النوم",`${a.sleep} — ${a.wake}`]].map(x=>`<div class="metric"><span>${x[0]}</span><b>${esc(x[1]||"—")}</b></div>`).join("")}<button class="primary" id="restartOnboarding" style="margin-top:16px">تعديل الإجابات</button></article><article class="panel"><h2>الخصوصية</h2><p class="muted">تُحفظ بياناتك في حسابك على Firebase. تُرسل إجابات الخطة فقط إلى Cloudflare وGemini بعد موافقتك.</p><button class="danger" id="logoutSettings">تسجيل الخروج</button></article></div>`;
+  const profile=[["◎","هدفك الحالي",a.goal],["◉","العمر",a.age?`${a.age} سنة`:"—"],["↕","الطول",a.height?`${a.height} سم`:"—"],["◆","الوزن الحالي",a.weight?`${a.weight} كغم`:"—"],["⌖","الوزن المستهدف",a.targetWeight?`${a.targetWeight} كغم`:"—"],["◷","النوم",a.sleep&&a.wake?`من ${a.sleep} إلى ${a.wake}`:"—"],["↗","مستوى النشاط",a.activityLevel||"—"],["♨","النظام الغذائي",a.dietType||"—"]];
+  return `<div class="hero"><div><h1>الإعدادات والبيانات</h1><p>راجع معلوماتك وحدّث خطتك في أي وقت.</p></div></div><div class="settings-layout"><article class="panel profile-panel"><div class="section-title"><div><span class="badge">ملفي الشخصي</span><h2>معلوماتي الأساسية</h2></div><button class="primary compact" id="restartOnboarding">تعديل المعلومات</button></div><div class="profile-grid">${profile.map(([icon,label,value])=>`<div class="profile-item"><i>${icon}</i><div><span>${label}</span><b>${esc(value)}</b></div></div>`).join("")}</div></article><article class="panel account-panel"><span class="badge green">حسابك بأمان</span><h2>أنت المتحكم</h2><p class="muted">معلوماتك مخصصة لك ولا تظهر للمستخدمين الآخرين. يمكنك تحديث بياناتك وخطتك متى أردت.</p><div class="account-points"><span>✓ خطتك مرتبطة بحسابك</span><span>✓ يمكنك تعديل معلوماتك في أي وقت</span><span>✓ لا نستخدم كلمة مرورك في إنشاء الخطة</span></div><button class="danger" id="logoutSettings">تسجيل الخروج</button></article></div>`;
 }
 
 const renderers={home:renderHome,today:renderToday,calendar:renderCalendar,study:renderStudy,nutrition:renderNutrition,workouts:renderWorkouts,habits:renderHabits,expenses:renderExpenses,progress:renderProgress,notes:renderNotes,assistant:renderAssistant,settings:renderSettings};
