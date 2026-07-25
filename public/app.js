@@ -93,6 +93,9 @@ function checkoutUrl(planName){
 function showSubscription(message){
   show("#subscription");
   $("#subscriptionMessage").textContent=message||"انتهت فترة الوصول إلى حسابك. اشترك للعودة إلى خطتك وبياناتك.";
+  const showTrial=billing.mode==="trial";
+  $("#trialPricingCard").classList.toggle("hidden",!showTrial);
+  if(showTrial)$("#trialPlanButton").textContent=`تجربتك فعّالة • بقي ${billing.daysRemaining||0} يومًا`;
 }
 
 onAuthStateChanged(auth,async user=>{
