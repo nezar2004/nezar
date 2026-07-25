@@ -167,14 +167,48 @@ const steps=[
   {title:"ما هدفك؟",desc:"هذا الاختيار يغيّر السعرات والماكروز وحجم الوجبات.",html:()=>`<div class="option-grid">${["تنشيف","تضخيم","تثبيت الوزن","تنظيم الحياة"].map(x=>`<button class="option ${answers.goal===x?"selected":""}" data-goal="${x}">${x}</button>`).join("")}</div><p class="muted">${answers.goal?`اختيارك الحالي: ${answers.goal}`:"اختر هدفًا للمتابعة"}</p>`},
   {title:"النوم والاستيقاظ",desc:"سنرتب يومك حولهما.",html:()=>`<div class="fields"><label>وقت النوم<input id="sleep" type="time" value="${answers.sleep||"00:00"}"></label><label>وقت الاستيقاظ<input id="wake" type="time" value="${answers.wake||"07:30"}"></label></div>`},
   {title:"دراستك وعملك",desc:"نعرض هذه الأسئلة بناءً على اختيارك في البداية.",html:contextQuestions},
-  {title:"تفضيلات النظام الغذائي",desc:"لنقترح وجبات يمكنك الالتزام بها فعلًا.",html:()=>`<div class="fields"><label>نوع الغذاء<select id="dietType"><option>عادي</option><option>نباتي</option><option>قليل الكربوهيدرات</option><option>بدون ألبان</option><option>بدون جلوتين</option></select></label><label>عدد الوجبات يوميًا<input id="mealsPerDay" type="number" min="2" max="6" value="${answers.mealsPerDay||3}"></label><label>ميزانية الطعام اليومية (د.أ)<input id="foodBudget" type="number" min="0" step=".1" value="${answers.foodBudget||0}"></label><label>إمكانية الطبخ<select id="cookingAccess"><option>أستطيع الطبخ يوميًا</option><option>طبخ بسيط وسريع</option><option>أعتمد غالبًا على الطعام الجاهز</option></select></label><label>أكلات تحبها<textarea id="liked">${answers.liked||""}</textarea></label><label>أكلات لا تحبها<textarea id="disliked">${answers.disliked||""}</textarea></label><label class="full">الحساسية أو القيود الصحية المتعلقة بالطعام<textarea id="allergies" placeholder="اكتب لا يوجد إذا لم يكن لديك شيء">${answers.allergies||""}</textarea></label><label>المكملات المستخدمة<input id="supplements" value="${answers.supplements||""}" placeholder="مثل بروتين أو لا يوجد"></label></div>`},
+  {title:"تفضيلات النظام الغذائي",desc:"لنقترح وجبات يمكنك الالتزام بها فعلًا.",html:()=>`<div class="fields"><label>نوع الغذاء<select id="dietType"><option>عادي</option><option>نباتي</option><option>قليل الكربوهيدرات</option><option>بدون ألبان</option><option>بدون جلوتين</option></select></label><label>عدد الوجبات يوميًا<input id="mealsPerDay" type="number" min="2" max="6" value="${answers.mealsPerDay||3}"></label><label>ميزانية الطعام اليومية (د.أ)<input id="foodBudget" type="number" min="0" step=".1" value="${answers.foodBudget||0}"></label><label>إمكانية الطبخ<select id="cookingAccess"><option>أستطيع الطبخ يوميًا</option><option>طبخ بسيط وسريع</option><option>أعتمد غالبًا على الطعام الجاهز</option></select></label><label>أكلات تحبها<textarea id="liked">${answers.liked||""}</textarea></label><label>أكلات لا تحبها<textarea id="disliked" placeholder="اكتب لا يوجد إذا لم تكره أطعمة معينة">${answers.disliked||""}</textarea></label><label class="full">الحساسية أو القيود الصحية المتعلقة بالطعام<textarea id="allergies" placeholder="اكتب لا يوجد إذا لم يكن لديك شيء">${answers.allergies||""}</textarea></label><label>المكملات المستخدمة (اختياري)<input id="supplements" value="${answers.supplements||""}" placeholder="مثل: بروتين"></label></div>`},
   {title:"التمارين والحركة",desc:"نربط الغذاء بنشاطك الحالي بدقة.",html:()=>{
     const noTraining=answers.trainingType==="لا أتمرن حاليًا";
     return `<div class="fields training-fields"><label class="full">هل تتمرن حاليًا؟<select id="trainingType"><option>حديد</option><option>كارديو</option><option>حديد وكارديو</option><option>تمارين منزلية</option><option>لا أتمرن حاليًا</option></select></label>${noTraining?`<div class="no-training-message full"><i>✓</i><div><b>تمام، لن نضيف برنامج تمارين</b><small>سنركّز على التغذية والنوم والحركة اليومية الخفيفة، ويمكنك تغيير هذا الخيار لاحقًا.</small></div></div>`:`<label>أيام التمرين أسبوعيًا<input id="trainingDays" type="number" min="1" max="7" value="${answers.trainingDays||3}"></label><label>وقت التمرين المناسب<input id="trainingTime" type="time" value="${answers.trainingTime||"17:00"}"></label><label>مدة الحصة بالدقائق<input id="trainingDuration" type="number" min="15" max="180" value="${answers.trainingDuration||60}"></label><label>إصابات أو قيود حركية<textarea id="injuries" placeholder="اكتب لا يوجد إذا لم يكن لديك شيء">${answers.injuries||""}</textarea></label>`}</div>`;
   }},
   {title:"المهام والعادات",desc:"ما الذي تريد إنجازه باستمرار؟",html:()=>`<div class="fields"><label>المهام الأساسية<textarea id="tasks">${answers.tasks||""}</textarea></label><label>العادات اليومية<textarea id="habits">${answers.habits||""}</textarea></label></div>`},
-  {title:"الميزانية والملاحظات",desc:"آخر خطوة.",html:()=>`<div class="fields"><label>الدخل اليومي<input id="income" type="number" step=".1" value="${answers.income||0}"></label><label>المصروف اليومي<input id="expenses" type="number" step=".1" value="${answers.expenses||0}"></label></div><label>ملاحظات<textarea id="notes">${answers.notes||""}</textarea></label><label style="display:flex;grid-template-columns:auto 1fr;gap:10px;margin-top:18px;line-height:1.7"><input id="aiConsent" type="checkbox" style="width:18px" ${answers.aiConsent?"checked":""}><span>أوافق على استخدام إجاباتي لإنشاء خطتي الشخصية. لن تُستخدم كلمة المرور أو تُرسل ضمن التحليل.</span></label>`}
+  {title:"الميزانية والملاحظات",desc:"آخر خطوة.",html:()=>`<div class="fields"><label>الدخل اليومي<input id="income" type="number" min="0" step=".1" value="${answers.income??0}"></label><label>المصروف اليومي<input id="expenses" type="number" min="0" step=".1" value="${answers.expenses??0}"></label></div><label>ملاحظات إضافية (اختياري)<textarea id="notes">${answers.notes||""}</textarea></label><label style="display:flex;grid-template-columns:auto 1fr;gap:10px;margin-top:18px;line-height:1.7"><input id="aiConsent" type="checkbox" required style="width:18px" ${answers.aiConsent?"checked":""}><span>أوافق على استخدام إجاباتي لإنشاء خطتي الشخصية. لن تُستخدم كلمة المرور أو تُرسل ضمن التحليل.</span></label>`}
 ];
+const optionalOnboardingFields=new Set(["waist","supplements","notes"]);
+function showStepError(message,field){
+  let error=$("#stepError");
+  if(!error){
+    error=document.createElement("div");
+    error.id="stepError";
+    error.className="step-error";
+    $("#questionBody").append(error);
+  }
+  error.textContent=message;
+  if(field){
+    field.classList.add("field-error");
+    field.setAttribute("aria-invalid","true");
+    field.scrollIntoView({behavior:"smooth",block:"center"});
+    setTimeout(()=>field.focus(),250);
+  }
+}
+function validateCurrentStep(){
+  $("#stepError")?.remove();
+  $$("#questionBody input,#questionBody textarea,#questionBody select").forEach(el=>{el.classList.remove("field-error");el.removeAttribute("aria-invalid")});
+  if(step===0&&!(answers.roles||[]).length){showStepError("اختر وضعك الحالي للمتابعة.");return false}
+  if(step===2&&!answers.goal){showStepError("اختر هدفك للمتابعة.");return false}
+  const fields=$$("#questionBody input,#questionBody textarea,#questionBody select");
+  for(const field of fields){
+    if(optionalOnboardingFields.has(field.id)||field.disabled)continue;
+    const empty=field.type==="checkbox"?!field.checked:String(field.value??"").trim()==="";
+    if(empty||!field.checkValidity()){
+      const label=field.closest("label")?.childNodes?.[0]?.textContent?.trim()||"هذا الحقل";
+      showStepError(`أكمل حقل «${label}» بشكل صحيح قبل المتابعة.`,field);
+      return false;
+    }
+  }
+  return true;
+}
 function renderStep(){
   $("#stepLabel").textContent=`الخطوة ${step+1} من ${steps.length}`;
   $("#progressBar").style.width=`${(step+1)/steps.length*100}%`;
@@ -216,7 +250,14 @@ document.addEventListener("change",e=>{
     renderStep();
   }
 });
-$("#nextStep").onclick=async()=>{const invalid=$("#questionBody input:invalid");if(invalid){invalid.reportValidity();return}collect();if(step===0&&!(answers.roles||[]).length)return alert("اختر وضعك الحالي أولًا.");if(step===2&&!answers.goal)return alert("اختر هدفك أولًا.");if(step<steps.length-1){step++;renderStep()}else{if(!answers.aiConsent)return alert("يجب الموافقة على استخدام البيانات لإنشاء الخطة.");await generatePlan()}};
+document.addEventListener("input",e=>{
+  if(e.target.matches("#questionBody input,#questionBody textarea,#questionBody select")){
+    e.target.classList.remove("field-error");
+    e.target.removeAttribute("aria-invalid");
+    $("#stepError")?.remove();
+  }
+});
+$("#nextStep").onclick=async()=>{if(!validateCurrentStep())return;collect();if(step<steps.length-1){step++;renderStep()}else await generatePlan()};
 $("#prevStep").onclick=()=>{collect();step--;renderStep()};
 async function generatePlan(){
   show("#analyzing");
