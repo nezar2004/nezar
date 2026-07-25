@@ -343,12 +343,17 @@ function empty(text){return `<div class="empty">${text}</div>`}
 function sectionHeader(title,type,label="＋ إضافة"){return `<div class="section-title"><h2>${title}</h2><button class="secondary compact" data-add="${type}">${label}</button></div>`}
 function plan(){return userData.plan||{summary:"",targets:{},dailySchedule:[],meals:[],workouts:[],habits:[],studyPlan:[],safetyNote:""}}
 function upcoming(){return workspace().events.filter(e=>e.date>=today()).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time))}
+function subscriptionAction(location="home"){
+  if(billing.mode==="owner")return `<span class="subscription-state owner">✓ حساب المالك — وصول دائم</span>`;
+  if(billing.mode==="active")return `<span class="subscription-state active">✓ اشتراكك فعّال</span>`;
+  return `<button class="primary subscription-cta ${location==="settings"?"wide":""}" data-open-subscription>✦ الاشتراك في وازن Pro</button>`;
+}
 
 function renderHome(){
   const p=plan(),w=workspace(),events=upcoming(),tasks=w.tasks.filter(x=>!x.done).sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
   const completed=w.tasks.length?w.tasks.filter(x=>x.done).length/w.tasks.length*100:0;
   const spent=w.expenses.filter(x=>x.type==="مصروف"&&x.date===today()).reduce((s,x)=>s+Number(x.amount),0);
-  return `<div class="hero"><div><h1>خطتك الشخصية جاهزة ✦</h1><p>${esc(p.summary)}</p></div><span class="badge green">${Math.round(completed)}% إنجاز المهام</span></div>
+  return `<div class="hero"><div><h1>خطتك الشخصية جاهزة ✦</h1><p>${esc(p.summary)}</p></div><div class="home-actions"><span class="badge green">${Math.round(completed)}% إنجاز المهام</span>${subscriptionAction()}</div></div>
   <div class="stats">${[["السعرات",p.targets.calories||"—"],["البروتين",`${p.targets.proteinGrams||"—"} غ`],["أقرب موعد",events[0]?formatDate(events[0].date):"لا يوجد"],["مصروف اليوم",money(spent)]].map(x=>`<article class="card"><span>${x[0]}</span><strong>${x[1]}</strong><small>ملخص اليوم</small></article>`).join("")}</div>
   <div class="grid2"><article class="panel"><h2>الأهم الآن</h2>${tasks.slice(0,5).map(x=>row(x,{title:x.title,details:`${x.category} • ${x.date||"بدون موعد"}`})).join("")||empty("لا توجد مهام مفتوحة")}</article>
   <article class="panel"><h2>المواعيد القادمة</h2>${events.slice(0,5).map(x=>row(x,{time:x.date,title:x.title,details:`${x.type}${x.course?` • ${x.course}`:""}`})).join("")||empty("أضف امتحانًا أو مشروعًا من التقويم")}</article></div>
@@ -436,7 +441,7 @@ function renderSettings(){
   const a=userData.answers||{};
   const roleLabels=(a.roles||[]).map(r=>roleOptions.find(x=>x[0]===r)?.[1]).filter(Boolean).join(" و ");
   const profile=[["▦","وضعك الحالي",roleLabels||"—"],["◎","هدفك الحالي",a.goal],["◉","العمر",a.age?`${a.age} سنة`:"—"],["↕","الطول",a.height?`${a.height} سم`:"—"],["◆","الوزن الحالي",a.weight?`${a.weight} كغم`:"—"],["⌖","الوزن المستهدف",a.targetWeight?`${a.targetWeight} كغم`:"—"],["◷","النوم",a.sleep&&a.wake?`من ${a.sleep} إلى ${a.wake}`:"—"],["↗","مستوى النشاط",a.activityLevel||"—"],["♨","النظام الغذائي",a.dietType||"—"]];
-  return `<div class="hero"><div><h1>الإعدادات والبيانات</h1><p>راجع معلوماتك وحدّث خطتك في أي وقت.</p></div></div><div class="settings-layout"><article class="panel profile-panel"><div class="section-title"><div><span class="badge">ملفي الشخصي</span><h2>معلوماتي الأساسية</h2></div><button class="primary compact" id="restartOnboarding">تعديل المعلومات</button></div><div class="profile-grid">${profile.map(([icon,label,value])=>`<div class="profile-item"><i>${icon}</i><div><span>${label}</span><b>${esc(value)}</b></div></div>`).join("")}</div></article><article class="panel account-panel"><span class="badge green">حسابك بأمان</span><h2>أنت المتحكم</h2><p class="muted">معلوماتك مخصصة لك ولا تظهر للمستخدمين الآخرين. يمكنك تحديث بياناتك وخطتك متى أردت.</p><div class="account-points"><span>✓ خطتك مرتبطة بحسابك</span><span>✓ يمكنك تعديل معلوماتك في أي وقت</span><span>✓ لا نستخدم كلمة مرورك في إنشاء الخطة</span></div><button class="danger" id="logoutSettings">تسجيل الخروج</button></article></div>`;
+  return `<div class="hero"><div><h1>الإعدادات والبيانات</h1><p>راجع معلوماتك وحدّث خطتك في أي وقت.</p></div></div><div class="settings-layout"><article class="panel profile-panel"><div class="section-title"><div><span class="badge">ملفي الشخصي</span><h2>معلوماتي الأساسية</h2></div><button class="primary compact" id="restartOnboarding">تعديل المعلومات</button></div><div class="profile-grid">${profile.map(([icon,label,value])=>`<div class="profile-item"><i>${icon}</i><div><span>${label}</span><b>${esc(value)}</b></div></div>`).join("")}</div></article><article class="panel account-panel"><span class="badge green">حسابك بأمان</span><h2>أنت المتحكم</h2><p class="muted">معلوماتك مخصصة لك ولا تظهر للمستخدمين الآخرين. يمكنك تحديث بياناتك وخطتك متى أردت.</p><div class="account-points"><span>✓ خطتك مرتبطة بحسابك</span><span>✓ يمكنك تعديل معلوماتك في أي وقت</span><span>✓ لا نستخدم كلمة مرورك في إنشاء الخطة</span></div><div class="account-subscription">${subscriptionAction("settings")}</div><button class="danger" id="logoutSettings">تسجيل الخروج</button></article></div>`;
 }
 
 const renderers={home:renderHome,today:renderToday,calendar:renderCalendar,study:renderStudy,work:renderWork,nutrition:renderNutrition,workouts:renderWorkouts,habits:renderHabits,expenses:renderExpenses,progress:renderProgress,notes:renderNotes,assistant:renderAssistant,settings:renderSettings};
@@ -490,7 +495,8 @@ function bindViewActions(){
   if($("#assistantRegenerate"))$("#assistantRegenerate").onclick=generatePlan;
   if($("#regenNutrition"))$("#regenNutrition").onclick=generatePlan;
   if($("#logoutSettings"))$("#logoutSettings").onclick=()=>signOut(auth);
-  if($("#bannerSubscribe"))$("#bannerSubscribe").onclick=()=>showSubscription("أنت الآن في فترة المشاهدة فقط. اشترك لتفعيل التعديل وجميع الميزات فورًا.");
+  $$("[data-open-subscription]").forEach(button=>button.onclick=()=>showSubscription("اختر الاشتراك الشهري أو السنوي لتفعيل وازن Pro."));
+  if($("#bannerSubscribe"))$("#bannerSubscribe").onclick=()=>showSubscription(billing.mode==="trial"?"يمكنك الاشتراك الآن والاستمرار دون انقطاع بعد انتهاء التجربة.":"أنت الآن في فترة المشاهدة فقط. اشترك لتفعيل التعديل وجميع الميزات فورًا.");
 }
 $$("[data-view]").forEach(b=>b.onclick=()=>renderDashboard(b.dataset.view));
 $("#quickAdd").onclick=()=>canEdit()&&openModal("task");
