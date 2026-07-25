@@ -27,3 +27,6 @@
 
 /* Pro 13: precise no-training state */
 .no-training-message{display:flex;align-items:center;gap:14px;padding:18px;border:1px solid #276658;border-radius:16px;background:linear-gradient(145deg,#10352f,#0a2422);color:#d8fff5}.no-training-message i{font-style:normal;width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:#1b705e;color:white;font-size:20px}.no-training-message>div{display:grid;gap:6px}.no-training-message b{font-size:16px}.no-training-message small{color:#9ed5c8;line-height:1.7}
+
+/* Pro 14: strict onboarding validation */
+.step-error{margin-top:18px;padding:14px 16px;border:1px solid #8b3548;border-radius:13px;background:#431d2a;color:#ffc3cc;font-weight:700;line-height:1.7}.field-error{border-color:#ff6d7f!important;box-shadow:0 0 0 3px #ff6d7f22!important;animation:fieldShake .22s ease}.field-error:focus{border-color:#ff8795!important}@keyframes fieldShake{25%{transform:translateX(4px)}75%{transform:translateX(-4px)}}
