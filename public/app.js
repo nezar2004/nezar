@@ -454,9 +454,19 @@ function renderDashboard(next="home"){
   $("#userGreeting").textContent=`مرحبًا ${n}`;
   $("#headerSubtitle").textContent=`${formatDate(today())} • ${userData.answers?.goal||"تنظيم حياتك"}`;
   const readOnly=billing.mode==="read_only";
+  const badge=$("#billingBadge");
+  const badgeInfo={
+    owner:["المالك • وصول دائم","owner"],
+    active:["اشتراك فعّال","active"],
+    trial:[`تجربة مجانية • ${billing.daysRemaining||0} يوم`,"trial"],
+    read_only:[`مشاهدة فقط • ${billing.daysRemaining||0} يوم`,"warning"]
+  }[billing.mode]||["",""];
+  badge.textContent=badgeInfo[0];
+  badge.className=`billing-badge ${badgeInfo[1]}`;
   $("#dashboard").classList.toggle("readonly-mode",readOnly);
   $("#quickAdd").classList.toggle("hidden",readOnly);
-  $("#accessBanner").classList.toggle("hidden",!readOnly);
+  $("#accessBanner").classList.toggle("hidden",!["trial","read_only"].includes(billing.mode));
+  if(billing.mode==="trial")$("#accessBanner").innerHTML=`<div><b>تجربتك المجانية فعّالة</b><span>بقي ${billing.daysRemaining||0} يومًا لاستخدام جميع الميزات. يمكنك الاشتراك الآن أو متابعة التجربة.</span></div><button class="secondary compact" id="bannerSubscribe">عرض الاشتراكات</button>`;
   if(readOnly)$("#accessBanner").innerHTML=`<div><b>فترة مشاهدة فقط</b><span>بقي ${billing.daysRemaining||0} أيام قبل قفل الحساب. اشترك لاستعادة التعديل والذكاء الاصطناعي.</span></div><button class="primary compact" id="bannerSubscribe">عرض الاشتراكات</button>`;
   $$("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
   $("#view").innerHTML=(renderers[view]||renderHome)();
