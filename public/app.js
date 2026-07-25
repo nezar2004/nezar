@@ -4,6 +4,10 @@ import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/fireb
 
 const config={apiKey:"AIzaSyD0aqTFxCsXOROKXaLZE9IV0zGmWCqsKQ8",authDomain:"hayati-app-35028.firebaseapp.com",projectId:"hayati-app-35028",storageBucket:"hayati-app-35028.firebasestorage.app",messagingSenderId:"216794693163",appId:"1:216794693163:web:e864c50ad01fde5f1ab46e"};
 const AI_ENDPOINT="https://hayati-ai.nezarcaht.workers.dev";
+const CHECKOUT_URLS={
+  monthly:"https://wazen-app.lemonsqueezy.com/checkout/buy/102e218e-2444-42ea-b191-e73e9d9ea716",
+  yearly:"https://wazen-app.lemonsqueezy.com/checkout/buy/4c54ca78-8aef-4436-a585-f3408a283b4e"
+};
 // ارفع هذا الرقم فقط عندما يحتاج التحديث إلى إعادة تعبئة بيانات جميع المستخدمين.
 const PROFILE_VERSION=5;
 const DEFAULT_WORKOUT_SPLIT=[
@@ -50,13 +54,13 @@ const DEFAULT_WORKOUT_SPLIT=[
 const fb=initializeApp(config),auth=getAuth(fb),db=getFirestore(fb);
 const persistenceReady=setPersistence(auth,browserSessionPersistence);
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const screens=["#loader","#auth","#onboarding","#analyzing","#dashboard"];
+const screens=["#loader","#auth","#onboarding","#analyzing","#subscription","#dashboard"];
 const dateKey=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const today=()=>dateKey();
 const id=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`;
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const friendlyError=v=>String(v||"حدث خطأ غير متوقع").replace(/Firebase/gi,"الخدمة").replace(/Cloudflare/gi,"الخدمة").replace(/Gemini/gi,"المساعد الذكي");
-let mode="login",step=0,currentUser=null,userData={},answers={},view="home",calendarDate=new Date(),modalState=null,expandedWorkout=null,authBootChecked=false;
+let mode="login",step=0,currentUser=null,userData={},answers={},view="home",calendarDate=new Date(),modalState=null,expandedWorkout=null,authBootChecked=false,billing={mode:"loading",daysRemaining:0};
 
 const emptyWorkspace=()=>({
   events:[],courses:[],tasks:[],habits:[
@@ -71,6 +75,25 @@ function toast(text){const x=$("#toast");x.textContent=text;x.classList.add("sho
 async function saveData(){await setDoc(doc(db,"users",currentUser.uid),{workspace:userData.workspace},{merge:true})}
 function formatDate(d){return new Intl.DateTimeFormat("ar-JO",{day:"numeric",month:"long",year:"numeric"}).format(new Date(`${d}T12:00:00`))}
 function money(n){return `${Number(n||0).toFixed(2)} د.أ`}
+const canEdit=()=>["owner","active","trial"].includes(billing.mode);
+async function loadBilling(){
+  const token=await currentUser.getIdToken(true);
+  const response=await fetch(`${AI_ENDPOINT}/billing/status`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`}});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||!result.mode)throw new Error(result.error||"تعذر التحقق من حالة الاشتراك");
+  billing=result;
+  return result;
+}
+function checkoutUrl(planName){
+  const url=new URL(CHECKOUT_URLS[planName]);
+  url.searchParams.set("checkout[custom][user_id]",currentUser.uid);
+  if(currentUser.email)url.searchParams.set("checkout[email]",currentUser.email);
+  return url.toString();
+}
+function showSubscription(message){
+  show("#subscription");
+  $("#subscriptionMessage").textContent=message||"انتهت فترة الوصول إلى حسابك. اشترك للعودة إلى خطتك وبياناتك.";
+}
 
 onAuthStateChanged(auth,async user=>{
   if(!authBootChecked){
@@ -84,6 +107,7 @@ onAuthStateChanged(auth,async user=>{
   try{
     const snap=await getDoc(doc(db,"users",user.uid));
     userData=snap.exists()?snap.data():{};
+    await loadBilling();
     if(snap.exists()&&Number(userData.profileVersion||0)<PROFILE_VERSION){
       await setDoc(doc(db,"users",user.uid),{onboardingComplete:false,profileVersion:PROFILE_VERSION,answers:{}},{merge:true});
       await signOut(auth);
@@ -92,6 +116,8 @@ onAuthStateChanged(auth,async user=>{
       return;
     }
     workspace();
+    if(billing.mode==="locked")return showSubscription("انتهت التجربة وفترة المشاهدة. بياناتك محفوظة وستعود كاملة فور الاشتراك.");
+    if(billing.mode==="read_only"&&!(userData.onboardingComplete&&userData.plan))return showSubscription("انتهت التجربة قبل إنشاء خطتك. اشترك للمتابعة وإنشاء خطة شخصية.");
     if(userData.onboardingComplete&&userData.plan){show("#dashboard");renderDashboard("home")}
     else{show("#onboarding");renderStep()}
   }catch(e){console.error(e);show("#auth");$("#authError").textContent=`تعذر تحميل الحساب: ${e.code||e.message}`}
@@ -260,6 +286,7 @@ document.addEventListener("input",e=>{
 $("#nextStep").onclick=async()=>{if(!validateCurrentStep())return;collect();if(step<steps.length-1){step++;renderStep()}else await generatePlan()};
 $("#prevStep").onclick=()=>{collect();step--;renderStep()};
 async function generatePlan(){
+  if(!canEdit())return showSubscription("هذه الميزة تحتاج اشتراكًا فعالًا.");
   show("#analyzing");
   try{
     const token=await currentUser.getIdToken(true);
@@ -426,13 +453,21 @@ function renderDashboard(next="home"){
   const n=currentUser.displayName||userData.name||"صديقي";
   $("#userGreeting").textContent=`مرحبًا ${n}`;
   $("#headerSubtitle").textContent=`${formatDate(today())} • ${userData.answers?.goal||"تنظيم حياتك"}`;
+  const readOnly=billing.mode==="read_only";
+  $("#dashboard").classList.toggle("readonly-mode",readOnly);
+  $("#quickAdd").classList.toggle("hidden",readOnly);
+  $("#accessBanner").classList.toggle("hidden",!readOnly);
+  if(readOnly)$("#accessBanner").innerHTML=`<div><b>فترة مشاهدة فقط</b><span>بقي ${billing.daysRemaining||0} أيام قبل قفل الحساب. اشترك لاستعادة التعديل والذكاء الاصطناعي.</span></div><button class="primary compact" id="bannerSubscribe">عرض الاشتراكات</button>`;
   $$("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
   $("#view").innerHTML=(renderers[view]||renderHome)();
   $("#dashboard aside").classList.remove("open");
   bindViewActions();
 }
 function bindViewActions(){
-  $$("[data-add]").forEach(b=>b.onclick=()=>openModal(b.dataset.add));
+  if(billing.mode==="read_only"){
+    $$("[data-add],[data-edit],[data-delete],[data-task],[data-habit],[data-meal],[data-workout],#restartOnboarding,#assistantRegenerate,#regenNutrition").forEach(b=>{b.disabled=true;b.title="التعديل يحتاج اشتراكًا فعالًا"});
+  }
+  $$("[data-add]").forEach(b=>b.onclick=()=>canEdit()&&openModal(b.dataset.add));
   $$("[data-edit]").forEach(b=>b.onclick=()=>{const [type,itemId]=b.dataset.edit.split(":");openModal(type,itemId)});
   $$("[data-delete]").forEach(b=>b.onclick=()=>{const [collection,itemId]=b.dataset.delete.split(":");removeItem(collection,itemId)});
   $$("[data-task]").forEach(b=>b.onclick=()=>toggleTask(b.dataset.task));
@@ -441,12 +476,16 @@ function bindViewActions(){
   $$("[data-meal]").forEach(b=>b.onclick=async()=>{const k=b.dataset.meal;workspace().mealChecks[k]=!workspace().mealChecks[k];await saveData();renderDashboard("nutrition")});
   $$("[data-workout]").forEach(b=>b.onclick=async()=>{const k=b.dataset.workout;workspace().workoutChecks[k]=!workspace().workoutChecks[k];await saveData();renderDashboard("workouts")});
   $$("[data-workout-open]").forEach(card=>card.onclick=e=>{if(e.target.closest("[data-workout]"))return;const i=Number(card.dataset.workoutOpen);expandedWorkout=expandedWorkout===i?null:i;renderDashboard("workouts")});
-  if($("#restartOnboarding"))$("#restartOnboarding").onclick=()=>{answers={...userData.answers};step=0;show("#onboarding");renderStep()};
+  if($("#restartOnboarding"))$("#restartOnboarding").onclick=()=>{if(!canEdit())return;answers={...userData.answers};step=0;show("#onboarding");renderStep()};
   if($("#assistantRegenerate"))$("#assistantRegenerate").onclick=generatePlan;
   if($("#regenNutrition"))$("#regenNutrition").onclick=generatePlan;
   if($("#logoutSettings"))$("#logoutSettings").onclick=()=>signOut(auth);
+  if($("#bannerSubscribe"))$("#bannerSubscribe").onclick=()=>showSubscription("أنت الآن في فترة المشاهدة فقط. اشترك لتفعيل التعديل وجميع الميزات فورًا.");
 }
 $$("[data-view]").forEach(b=>b.onclick=()=>renderDashboard(b.dataset.view));
-$("#quickAdd").onclick=()=>openModal("task");
+$("#quickAdd").onclick=()=>canEdit()&&openModal("task");
 $("#menu").onclick=()=>$("#dashboard aside").classList.toggle("open");
 $("#logout1").onclick=$("#logout2").onclick=()=>signOut(auth);
+$$("[data-subscribe]").forEach(button=>button.onclick=()=>window.location.href=checkoutUrl(button.dataset.subscribe));
+$("#checkSubscription").onclick=async()=>{try{$("#checkSubscription").disabled=true;await loadBilling();if(billing.mode==="locked"||billing.mode==="read_only")return showSubscription();const snap=await getDoc(doc(db,"users",currentUser.uid));userData=snap.exists()?snap.data():{};show("#dashboard");renderDashboard("home")}catch(e){toast(friendlyError(e.message))}finally{$("#checkSubscription").disabled=false}};
+$("#subscriptionLogout").onclick=()=>signOut(auth);
