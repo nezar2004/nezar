@@ -8,7 +8,7 @@
   <title>وازن — خطتك الذكية لحياة أفضل</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="styles.css?v=pro-17">
+  <link rel="stylesheet" href="styles.css?v=pro-18">
 </head>
 <body>
   <div id="loader" class="screen center"><div class="spinner"></div><p>جاري التحميل...</p></div>
@@ -44,10 +44,11 @@
   <section id="subscription" class="screen hidden">
     <div class="pricing-shell">
       <div class="pricing-brand"><img src="icon.svg" alt="وازن"><b>وازن Pro</b></div>
-      <div class="pricing-intro"><span class="eyebrow">خطتك تستحق الاستمرار</span><h1>اختر اشتراكك واستعد جميع الميزات</h1><p id="subscriptionMessage">انتهت فترة الوصول إلى حسابك. اشترك للعودة إلى خطتك وبياناتك.</p></div>
+      <div class="pricing-intro"><span class="eyebrow">استثمر في يوم أكثر توازنًا</span><h1>ابدأ مجانًا، واستمر بالطريقة التي تناسبك</h1><p id="subscriptionMessage">اختر الباقة الأنسب لك واستمر بخطتك دون انقطاع.</p></div>
       <div class="pricing-cards">
-        <article class="pricing-card"><span>شهري</span><h2>5.99 <small>د.أ</small></h2><p>تجديد كل شهر، ويمكنك الإلغاء في أي وقت.</p><ul><li>الخطط الذكية كاملة</li><li>التغذية والتمارين</li><li>جميع أدوات التنظيم</li></ul><button class="primary subscribe-button" data-subscribe="monthly">اشترك شهريًا</button></article>
-        <article class="pricing-card featured"><div class="saving">وفّر 30% • أفضل قيمة</div><span>سنوي</span><h2>49.99 <small>د.أ</small></h2><p>عام كامل بسعر أوفر من الدفع الشهري.</p><ul><li>كل مزايا الاشتراك الشهري</li><li>توفير 21.89 د.أ سنويًا</li><li>استخدام بلا انقطاع لعام كامل</li></ul><button class="primary subscribe-button" data-subscribe="yearly">اشترك سنويًا</button></article>
+        <article id="trialPricingCard" class="pricing-card trial-plan hidden"><div class="plan-tag">بدون بطاقة بنكية</div><span>تجربة البداية</span><h2>14 <small>يومًا مجانًا</small></h2><p>اكتشف وازن كاملًا وابنِ خطتك الشخصية قبل أن تقرر.</p><ul><li>إنشاء خطتك بالذكاء الاصطناعي</li><li>نظام غذائي وتمارين حسب بياناتك</li><li>التقويم والعادات والمصاريف والتقدم</li><li>7 أيام إضافية لمشاهدة بياناتك بعد التجربة</li></ul><button id="trialPlanButton" class="secondary current-plan" disabled>تجربتك فعّالة الآن</button></article>
+        <article class="pricing-card monthly-plan"><div class="plan-tag blue">مرونة بلا التزام طويل</div><span>وازن Pro الشهري</span><h2>5.99 <small>د.أ / شهر</small></h2><p>كل ما تحتاجه لتطوير يومك، مع حرية الإلغاء متى شئت.</p><ul><li>تحديث خطتك الذكية عند تغيّر هدفك</li><li>وجبات دقيقة بالكميات والسعرات</li><li>تمارين بالأجهزة والجولات والتكرارات</li><li>مهام ومواعيد وعادات وتتبع تقدم بلا حدود</li></ul><button class="primary subscribe-button" data-subscribe="monthly">ابدأ وازن Pro شهريًا</button></article>
+        <article class="pricing-card featured yearly-plan"><div class="saving">الأكثر اختيارًا • وفّر 30%</div><span>وازن Pro السنوي</span><h2>49.99 <small>د.أ / سنة</small></h2><p><b>يعادل 4.17 د.أ شهريًا فقط</b> — أفضل استثمار للاستمرار وتحقيق نتائج حقيقية.</p><ul><li>كل مزايا وازن Pro لمدة عام كامل</li><li>وفّر 21.89 د.أ مقارنة بالدفع الشهري</li><li>خطة تتطور معك طوال السنة</li><li>جميع تحديثات وازن الجديدة خلال اشتراكك</li></ul><button class="primary subscribe-button yearly-button" data-subscribe="yearly">احصل على أفضل قيمة سنويًا</button></article>
       </div>
       <div class="pricing-actions"><button id="checkSubscription" class="secondary">تحقق من حالة الاشتراك</button><button id="subscriptionLogout" class="text-btn">تسجيل الخروج</button></div>
     </div>
@@ -61,6 +62,6 @@
     <main><header><button id="menu">☰</button><div><b id="userGreeting"></b><small id="headerSubtitle">خطتك الشخصية جاهزة للتنفيذ</small></div><div class="header-actions"><span id="billingBadge" class="billing-badge"></span><button id="quickAdd" class="primary compact">＋ إضافة سريعة</button></div></header><div id="accessBanner" class="access-banner hidden"></div><div id="view"></div></main>
   </section>
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-card"><div class="modal-head"><h2 id="modalTitle">إضافة</h2><button id="modalClose">×</button></div><form id="modalForm"><div id="modalFields"></div><div class="modal-actions"><button type="button" id="modalCancel" class="secondary">إلغاء</button><button class="primary">حفظ</button></div></form></div></div>
-  <div id="toast"></div><script type="module" src="app.js?v=pro-17"></script>
+  <div id="toast"></div><script type="module" src="app.js?v=pro-18"></script>
 </body>
 </html>
