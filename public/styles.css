@@ -50,8 +50,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    direction: ltr;
+    gap: 25px;
+    direction: rtl;
+    transform: translateY(-25px);
 }
 
 .brand-logo {
@@ -68,8 +69,9 @@
 }
 
 .brand-name {
-    margin-top: 10px;
+    margin-top: -15px;
     font-size: 22px;
     font-weight: 700;
     text-align: center;
+    transform: translateY(-25px);
 }
