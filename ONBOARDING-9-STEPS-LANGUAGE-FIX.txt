@@ -1,0 +1,2 @@
+Onboarding language fix — all 9 steps now fully bilingual.
+English mode translates step counter, titles, descriptions, role cards, labels, select options, placeholders, consent text, and validation messages.

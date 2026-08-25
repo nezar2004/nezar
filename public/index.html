@@ -8,50 +8,105 @@
   <title>وازن — خطتك الذكية لحياة أفضل</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="apple-touch-icon" href="icon.svg">
-  <link rel="stylesheet" href="styles.css?v=pro-18">
+  <link rel="stylesheet" href="styles.css?v=pro-20">
 </head>
 <body>
-  <div id="loader" class="screen center"><div class="spinner"></div><p>جاري التحميل...</p></div>
+  <div id="loader" class="screen center premium-loader">
+  <div class="loader-aura"></div>
+  <div class="loader-logo"><img src="icon.svg" alt="وازن"><span></span></div>
+  <div class="loader-copy"><span class="loader-kicker">WAZEN • PERSONAL OS</span><h1 id="loaderTitle">جاري فتح وازن</h1><p id="loaderSubtitle">نجهّز مساحتك الشخصية ونزامن بياناتك بأمان…</p></div>
+  <div class="loader-progress"><i></i></div>
+  <div class="loader-steps"><span>✓ التحقق من الحساب</span><span>✓ مزامنة البيانات</span><span>◌ تجهيز لوحة اليوم</span></div>
+</div>
+  <section id="landing" class="landing-screen">
+    <header class="landing-nav">
+      <a class="landing-brand" href="#landing" aria-label="وازن">
+        <img src="icon.svg" alt="وازن">
+        <span><b>وازن</b><small>مركز حياتك الذكي</small></span>
+      </a>
+      <nav class="landing-links">
+        <a href="#why">لماذا وازن؟</a><a href="#how">كيف يعمل؟</a><a href="#features">المزايا</a>
+      </nav>
+      <div class="nav-actions"><button id="languageToggle" class="lang-toggle" type="button" aria-label="تغيير اللغة">EN</button><button id="landingLogin" class="nav-login">تسجيل الدخول <span>↗</span></button></div>
+    </header>
+
+    <main>
+      <section class="landing-hero">
+        <div class="hero-copy">
+          <div class="hero-kicker"><i></i> منصة واحدة لكل تفاصيل يومك</div>
+          <h1>وازن يومك.<br><em>وحقق هدفك.</em></h1>
+          <p>من الدراسة والتغذية والرياضة إلى العادات والمواعيد والمصاريف — وازن يحوّل يومك المزدحم إلى خطة شخصية واضحة، تتطور معك.</p>
+          <div class="hero-actions"><button id="landingStart" class="hero-primary">ابدأ رحلتك مجانًا <span>←</span></button><a href="#how" class="hero-secondary">شاهد كيف يعمل <span>▶</span></a></div>
+          <div class="hero-trust"><span>✦ خطة شخصية بالذكاء الاصطناعي</span><span>✓ بياناتك محفوظة</span><span>↗ تتبع تقدمك</span></div>
+        </div>
+        <div class="hero-visual" aria-label="معاينة تفاعلية لمنصة وازن">
+          <div class="orb orb-a"></div><div class="orb orb-b"></div>
+          <div class="floating-card fc-top"><span>اليوم</span><b>84%</b><small>منجز بشكل رائع</small><i class="mini-progress"><u></u></i></div>
+          <div class="dashboard-mock">
+            <div class="mock-top"><span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span><small>مركز يومك الذكي</small></div>
+            <div class="mock-greeting"><small>صباح الخير 👋</small><h3>جاهز تحقق أهدافك؟</h3></div>
+            <div class="mock-grid"><div><small>الدراسة</small><b>3.5h</b><i></i></div><div><small>التمرين</small><b>45m</b><i></i></div><div><small>الماء</small><b>6 / 8</b><i></i></div></div>
+            <div class="mock-plan"><span>✦ خطة اليوم</span><b>جلسة تركيز • 10:00</b><small>تذكير ذكي حسب جدولك</small></div>
+          </div>
+          <div class="floating-card fc-bottom"><span>تقدمك</span><strong>+27%</strong><small>هذا الشهر</small><div class="sparkline"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+        </div>
+      </section>
+
+      <section id="why" class="landing-section why-section">
+        <div class="section-heading"><span>01 — الفكرة</span><h2>مش تطبيق آخر.<br><em>هذا نظام لحياتك.</em></h2><p>بدل عشرات التطبيقات والقوائم المتفرقة، وازن يجمع أهم تفاصيل يومك في مساحة واحدة ويجعلها تعمل معًا.</p></div>
+        <div class="why-grid"><article><b>01</b><h3>افهم يومك</h3><p>رتّب أولوياتك، مواعيدك، دراستك وعملك في صورة واحدة واضحة.</p></article><article><b>02</b><h3>خطط بذكاء</h3><p>بياناتك تتحول إلى خطة شخصية قابلة للتنفيذ بدل نصائح عامة.</p></article><article><b>03</b><h3>راقب التطور</h3><p>شاهد العادات والتقدم والمصاريف والإنجازات وهي تتجمع أمامك.</p></article></div>
+      </section>
+
+      <section id="features" class="landing-section features-section">
+        <div class="section-heading centered"><span>02 — كل شيء في مكان واحد</span><h2>أدوات صغيرة.<br><em>فرق كبير.</em></h2></div>
+        <div class="feature-grid">
+          <article class="feature-card feature-blue"><div class="feature-icon">✦</div><span>01</span><h3>خطة ذكية</h3><p>خطة يومية تتشكل حول أهدافك ووقتك وواقعك.</p><div class="feature-lines"><i></i><i></i><i></i></div></article>
+          <article class="feature-card feature-violet"><div class="feature-icon">◒</div><span>02</span><h3>تغذية وتمارين</h3><p>وجبات وتمارين منظمة مع تتبع بسيط وواضح.</p><div class="feature-rings"><i></i><i></i><i></i></div></article>
+          <article class="feature-card feature-green"><div class="feature-icon">↗</div><span>03</span><h3>تقدم وعادات</h3><p>حوّل أهدافك إلى خطوات يومية يمكن قياسها.</p><div class="feature-bars"><i></i><i></i><i></i><i></i></div></article>
+          <article class="feature-card feature-amber"><div class="feature-icon">▦</div><span>04</span><h3>تقويم ومصاريف</h3><p>اعرف أين يذهب وقتك ومالك بدون تعقيد.</p><div class="feature-calendar"><i></i><i></i><i></i><i></i><i></i><i></i></div></article>
+        </div>
+      </section>
+
+      <section id="how" class="landing-section how-section">
+        <div class="section-heading"><span>03 — شاهد التجربة</span><h2>من الفكرة<br><em>إلى يوم متوازن.</em></h2><p>مقاطع قصيرة توضح فلسفة وازن: خطط، نفّذ، راقب، ثم دع النظام يتطور معك.</p></div>
+        <div class="video-grid">
+          <article class="video-card"><div class="video-frame video-one"><video muted autoplay loop playsinline preload="metadata"><source src="media/flow-1.mp4" type="video/mp4"></video><div class="video-overlay"><span>01</span><b>خطط ليومك</b><small>كل أولوياتك في لوحة واحدة</small></div></div></article>
+          <article class="video-card"><div class="video-frame video-two"><video muted autoplay loop playsinline preload="metadata"><source src="media/flow-2.mp4" type="video/mp4"></video><div class="video-overlay"><span>02</span><b>نفّذ بتركيز</b><small>عادات وتمارين ومهام بدون فوضى</small></div></div></article>
+          <article class="video-card"><div class="video-frame video-three"><video muted autoplay loop playsinline preload="metadata"><source src="media/flow-3.mp4" type="video/mp4"></video><div class="video-overlay"><span>03</span><b>راقب تقدمك</b><small>الإنجازات تصبح واضحة مع الوقت</small></div></div></article>
+        </div>
+      </section>
+
+      <section class="landing-cta"><div><span>وازن — من التخطيط إلى الإنجاز</span><h2>جاهز تبني نسخة أفضل من يومك؟</h2><p>ابدأ مجانًا، وخلي يومك يشتغل لصالحك.</p></div><button id="landingStartBottom" class="hero-primary">ابدأ الآن <span>←</span></button></section>
+    </main>
+    <footer class="landing-footer"><span>© وازن</span><span>صُمّم ليجعل الحياة أبسط، لا أكثر تعقيدًا.</span></footer>
+  </section>
+
   <section id="auth" class="screen hidden">
-    <div class="auth-art">
-    
-        <div class="brand-header">
-            <img class="brand-logo" src="icon.svg" alt="وازن">
-    
-            <h1>
-                وازن يومك.<br>
-                وحقق هدفك.
-            </h1>
-        </div>
-    
-        <div class="brand-name">
-            وازن
-        </div>
-    
-        <div class="auth-features">
-            <span>✦ خطة بالذكاء الاصطناعي</span>
-            <span>✓ بياناتك محفوظة</span>
-            <span>↗ تقدم واضح</span>
-        </div>
-    
-    </div>
-    <div class="auth-card">
-      <div class="tabs"><button class="active" data-auth-tab="login">تسجيل الدخول</button><button data-auth-tab="signup">حساب جديد</button></div>
-      <form id="authForm">
-        <label class="signup-only hidden">الاسم الكامل<input id="name" placeholder="اسمك"></label>
-        <label>البريد الإلكتروني<input id="email" type="email" required placeholder="name@example.com"></label>
-        <label>كلمة المرور<input id="password" type="password" required minlength="6" placeholder="••••••••"></label>
-        <button class="primary" id="authSubmit">تسجيل الدخول</button>
-      </form>
-      <button class="google" id="googleLogin">G المتابعة بواسطة Google</button>
-      <button class="text-btn" id="resetPassword">نسيت كلمة المرور؟</button>
-      <form id="resetForm" class="reset-panel hidden">
-        <div class="reset-head"><div><b>استعادة كلمة المرور</b><small>سنرسل رابطًا آمنًا إلى بريدك</small></div><button type="button" id="closeReset">×</button></div>
-        <label>البريد الإلكتروني<input id="resetEmail" type="email" required placeholder="name@example.com"></label>
-        <button id="sendReset" class="primary">إرسال رابط الاستعادة</button>
-        <div id="resetStatus" class="reset-status hidden" aria-live="polite"></div>
-      </form>
-      <p id="authError" class="error"></p>
+    <div class="auth-backdrop"><div class="auth-glow g1"></div><div class="auth-glow g2"></div><div class="auth-grid"></div></div>
+    <div class="auth-stage">
+      <button id="backToLanding" class="auth-back">→ العودة للموقع</button>
+      <div class="auth-pitch"><img class="brand-logo" src="icon.svg" alt="وازن"><span class="auth-badge">مساحتك الشخصية</span><h1>أهلًا بك في<br><em>وازن.</em></h1><p>سجّل دخولك وخلّينا نكمّل من حيث توقفت — خطتك، عاداتك، تقدمك، وكل تفاصيل يومك في مكان واحد.</p><div class="auth-micro"><span>✦ ذكي</span><span>⚡ سريع</span><span>🔒 خاص</span></div></div>
+      <div class="auth-card">
+        <div class="auth-card-head"><div><small>ابدأ الآن</small><h2>مرحبًا بعودتك</h2></div><img src="icon.svg" alt="وازن"></div>
+        <div class="tabs"><button class="active" data-auth-tab="login">تسجيل الدخول</button><button data-auth-tab="signup">حساب جديد</button></div>
+        <form id="authForm">
+          <label class="signup-only hidden">الاسم الكامل<input id="name" placeholder="اسمك"></label>
+          <label>البريد الإلكتروني<input id="email" type="email" required placeholder="name@example.com"></label>
+          <label>كلمة المرور<input id="password" type="password" required minlength="6" placeholder="••••••••"></label>
+          <button class="primary" id="authSubmit">تسجيل الدخول <span>←</span></button>
+        </form>
+        <div class="auth-divider"><span>أو</span></div>
+        <button class="google" id="googleLogin"><b>G</b> المتابعة بواسطة Google</button>
+        <button class="text-btn" id="resetPassword">نسيت كلمة المرور؟</button>
+        <form id="resetForm" class="reset-panel hidden">
+          <div class="reset-head"><div><b>استعادة كلمة المرور</b><small>سنرسل رابطًا آمنًا إلى بريدك</small></div><button type="button" id="closeReset">×</button></div>
+          <label>البريد الإلكتروني<input id="resetEmail" type="email" required placeholder="name@example.com"></label>
+          <button id="sendReset" class="primary">إرسال رابط الاستعادة</button>
+          <div id="resetStatus" class="reset-status hidden" aria-live="polite"></div>
+        </form>
+        <p id="authError" class="error"></p>
+        <small class="auth-privacy">بياناتك محفوظة بأمان وتستخدم فقط لتخصيص تجربتك.</small>
+      </div>
     </div>
   </section>
   <section id="onboarding" class="screen hidden">
@@ -79,9 +134,9 @@
         <button class="active" data-view="home">⌂ الرئيسية</button><button data-view="today">☑ يومي</button><button data-view="calendar">▦ التقويم</button><button data-view="study">▣ الدراسة</button><button data-view="work">▤ العمل</button><button data-view="nutrition">♨ التغذية</button><button data-view="workouts">◆ التمارين</button><button data-view="habits">◷ العادات</button><button data-view="expenses">▥ المصاريف</button><button data-view="progress">↗ التقدم</button><button data-view="notes">✎ الملاحظات</button><button data-view="assistant">✦ المساعد الذكي</button><button data-view="settings">⚙ الإعدادات</button>
       </nav><button id="logout2" class="logout">تسجيل الخروج</button>
     </aside>
-    <main><header><button id="menu">☰</button><div><b id="userGreeting"></b><small id="headerSubtitle">خطتك الشخصية جاهزة للتنفيذ</small></div><div class="header-actions"><span id="billingBadge" class="billing-badge"></span><button id="quickAdd" class="primary compact">＋ إضافة سريعة</button></div></header><div id="accessBanner" class="access-banner hidden"></div><div id="view"></div></main>
+    <main><header><button id="menu">☰</button><div><b id="userGreeting"></b><small id="headerSubtitle">خطتك الشخصية جاهزة للتنفيذ</small></div><div class="header-actions"><span id="billingBadge" class="billing-badge"></span><button id="notificationButton" class="header-icon" aria-label="الإشعارات"><span>♢</span><i id="notificationCount" class="notification-count hidden">0</i></button><button id="quickAdd" class="primary compact">＋ إضافة سريعة</button></div></header><div id="accessBanner" class="access-banner hidden"></div><div id="view" aria-live="polite"></div><div id="notificationPanel" class="notification-panel hidden"></div></main>
   </section>
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-card"><div class="modal-head"><h2 id="modalTitle">إضافة</h2><button id="modalClose">×</button></div><form id="modalForm"><div id="modalFields"></div><div class="modal-actions"><button type="button" id="modalCancel" class="secondary">إلغاء</button><button class="primary">حفظ</button></div></form></div></div>
-  <div id="toast"></div><script type="module" src="app.js?v=pro-18"></script>
+  <div id="toast"></div><script type="module" src="app.js?v=pro-20"></script>
 </body>
 </html>
