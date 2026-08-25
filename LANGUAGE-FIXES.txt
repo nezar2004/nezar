@@ -1,0 +1,10 @@
+WAZEN V24 GLOBAL BILINGUAL — FINAL LANGUAGE FIX
+
+Fixed remaining English-language issues in the dashboard:
+- Cutting / Bulking / Weight maintenance / Life organization plan titles.
+- Nutrition plan descriptions.
+- Progress empty-state text, including the no-diacritic variant.
+- Smart signal phrases and the AI banner's trailing Arabic sentence.
+- Preserved user-entered note/task content instead of translating personal data automatically.
+
+Firebase files (firebase.json and .firebaserc) are included at the project root.

@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, updateProfile, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+import { I18N, EN_TO_AR, t } from "./i18n.js";
 
 const config={apiKey:"AIzaSyD0aqTFxCsXOROKXaLZE9IV0zGmWCqsKQ8",authDomain:"hayati-app-35028.firebaseapp.com",projectId:"hayati-app-35028",storageBucket:"hayati-app-35028.firebasestorage.app",messagingSenderId:"216794693163",appId:"1:216794693163:web:e864c50ad01fde5f1ab46e"};
 const AI_ENDPOINT="https://hayati-ai.nezarcaht.workers.dev";
@@ -50,15 +51,74 @@ const DEFAULT_WORKOUT_SPLIT=[
     ["Cable Crunch","كرنش بالكيبل","البطن",3,"12-20",45],
     ["Captain's Chair Knee Raise","جهاز رفع الركبتين","البطن",3,"10-15",45]
   ]}
-].map(day=>({...day,exercises:day.exercises.map(([englishName,machine,muscle,sets,reps,restSeconds])=>({name:`${machine} — ${englishName}`,machine,muscle,sets,reps,restSeconds,notes:"استخدم وزنًا يسمح بأداء صحيح وتحكم كامل بالحركة"}))}));
+].map(day=>({...day,exercises:day.exercises.map(([englishName,machine,muscle,sets,reps,restSeconds])=>({name:`${machine} — ${englishName}`,nameAr:machine,nameEn:englishName,machine,muscle,sets,reps,restSeconds,notes:"استخدم وزنًا يسمح بأداء صحيح وتحكم كامل بالحركة"}))}));
 const fb=initializeApp(config),auth=getAuth(fb),db=getFirestore(fb);
 const persistenceReady=setPersistence(auth,browserSessionPersistence);
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const screens=["#loader","#auth","#onboarding","#analyzing","#subscription","#dashboard"];
+let lang=localStorage.getItem("wazen-lang")||"ar";
+const textSources=new WeakMap();
+const phraseEntries=Object.entries(I18N.en).sort((a,b)=>b[0].length-a[0].length);
+const reversePhraseEntries=Object.entries(EN_TO_AR).sort((a,b)=>b[0].length-a[0].length);
+function translateString(value){
+  let out=String(value??"");
+  if(lang==="en"){
+    // Translate generated time ranges/compact study-hour values without using
+    // broad one-character Arabic dictionary keys that could alter normal words.
+    out=out.replace(/من\s*(\d{1,2}:\d{2})\s*إلى\s*(\d{1,2}:\d{2})/g,"from $1 to $2");
+    out=out.replace(/(\d+(?:\.\d+)?)\s*س\b/g,"$1h");
+    out=out.replace(/أكملت\s+(\d+)\s+من\s+(\d+)\s+عادات اليوم\. خطوة صغيرة الآن ترفع مؤشر التوازن\./g,"You completed $1 of $2 habits today. A small step now improves your balance score.");
+    out=out.replace(/مصروف اليوم\s+(.+?)\s+أعلى من هدفك اليومي\s+(.+)\./g,"Today’s spending $1 is above your daily target $2.");
+    out=out.replace(/(\d+)%\s+من المهام مكتملة/g,"$1% of tasks completed");
+  }else{
+    out=out.replace(/from\s*(\d{1,2}:\d{2})\s*to\s*(\d{1,2}:\d{2})/gi,"من $1 إلى $2");
+    out=out.replace(/(\d+(?:\.\d+)?)h\b/g,"$1س");
+    out=out.replace(/You completed\s+(\d+)\s+of\s+(\d+)\s+habits today\. A small step now improves your balance score\./g,"أكملت $1 من $2 عادات اليوم. خطوة صغيرة الآن ترفع مؤشر التوازن.");
+    out=out.replace(/Today’s spending\s+(.+?)\s+is above your daily target\s+(.+)\./g,"مصروف اليوم $1 أعلى من هدفك اليومي $2.");
+    out=out.replace(/(\d+)%\s+of tasks completed/g,"$1% من المهام مكتملة");
+  }
+  const entries=lang==="ar"?reversePhraseEntries:phraseEntries;
+  for(const [from,to] of entries){ if(from && out.includes(from)) out=out.split(from).join(to); }
+  return out;
+}
+function applyLanguage(root=document.body){
+  document.documentElement.lang=lang; document.documentElement.dir=lang==="ar"?"rtl":"ltr";
+  document.body.classList.toggle("lang-en",lang==="en");
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{const p=n.parentElement;if(!p||["SCRIPT","STYLE"].includes(p.tagName)||p.closest("script,style"))return NodeFilter.FILTER_REJECT;return NodeFilter.FILTER_ACCEPT;}});
+  const nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(n=>{ if(!textSources.has(n)) textSources.set(n,n.nodeValue); n.nodeValue=translateString(textSources.get(n)); });
+  root.querySelectorAll("input[placeholder],textarea[placeholder],button[aria-label],img[alt]").forEach(el=>{ if(!el.dataset.i18nSource){el.dataset.i18nSource=el.getAttribute(el.hasAttribute("placeholder")?"placeholder":el.hasAttribute("aria-label")?"aria-label":"alt")||""; } const attr=el.hasAttribute("placeholder")?"placeholder":el.hasAttribute("aria-label")?"aria-label":"alt"; el.setAttribute(attr,translateString(el.dataset.i18nSource)); });
+  const toggle=$("#languageToggle");
+  if(toggle){ toggle.textContent=lang==="ar"?"EN":"عربي"; toggle.setAttribute("aria-label",lang==="ar"?"Switch to English":"التبديل إلى العربية"); }
+  document.title=lang==="ar"?"وازن — خطتك الذكية لحياة أفضل":"Wazen — Your Smart Plan for a Better Life";
+  const meta=document.querySelector('meta[name="description"]'); if(meta) meta.content=lang==="ar"?"وازن — خطتك الذكية للدراسة والتغذية والرياضة وتنظيم الحياة":"Wazen — your smart system for study, nutrition, fitness, and life organization";
+}
+async function setLanguage(next){
+  lang=next;localStorage.setItem("wazen-lang",lang);applyLanguage();
+  const _languageToggle=$("#languageToggle"); if(_languageToggle) _languageToggle.classList.toggle("hidden",$("#landing")?.classList.contains("hidden"));
+  if(currentUser&&userData.plan&&userData.planLanguage!==lang){
+    const translated=await syncPlanLanguage(true);
+    if(translated){show("#dashboard");renderDashboard(view);return;}
+  }
+  if(currentUser&&document.querySelector("#dashboard")&&!document.querySelector("#dashboard").classList.contains("hidden")) renderDashboard(view);
+  else if(document.querySelector("#onboarding")&&!document.querySelector("#onboarding").classList.contains("hidden")) renderStep();
+  else { ["#landing","#auth","#subscription"].forEach(sel=>{const el=$(sel); if(el&&!el.classList.contains("hidden")) applyLanguage(el);}); }
+}
+const screens=["#loader","#landing","#auth","#onboarding","#analyzing","#subscription","#dashboard"];
 const dateKey=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const today=()=>dateKey();
 const id=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`;
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const friendlyAuthError=(e, action="login")=>{
+  const code=String(e?.code||"");
+  if(code.includes("email-already-in-use")) return "هذا البريد الإلكتروني مستخدم بالفعل. جرّب تسجيل الدخول أو استخدم بريدًا آخر.";
+  if(code.includes("invalid-credential")||code.includes("wrong-password")||code.includes("user-not-found")) return "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+  if(code.includes("weak-password")) return "كلمة المرور ضعيفة. استخدم 6 أحرف على الأقل.";
+  if(code.includes("invalid-email")) return "يرجى إدخال بريد إلكتروني صحيح.";
+  if(code.includes("too-many-requests")) return "تمت محاولات كثيرة. انتظر قليلًا ثم حاول مرة أخرى.";
+  if(code.includes("operation-not-allowed")) return "طريقة تسجيل الدخول هذه غير مفعّلة في Firebase.";
+  if(code.includes("popup-closed-by-user")) return "تم إغلاق نافذة Google قبل إكمال تسجيل الدخول.";
+  return action==="signup"?"تعذر إنشاء الحساب. حاول مرة أخرى.":"تعذر تسجيل الدخول. حاول مرة أخرى.";
+};
 const friendlyError=v=>String(v||"حدث خطأ غير متوقع").replace(/Firebase/gi,"الخدمة").replace(/Cloudflare/gi,"الخدمة").replace(/Gemini/gi,"المساعد الذكي");
 let mode="login",step=0,currentUser=null,userData={},answers={},view="home",calendarDate=new Date(),modalState=null,expandedWorkout=null,authBootChecked=false,billing={mode:"loading",daysRemaining:0};
 
@@ -70,15 +130,36 @@ const emptyWorkspace=()=>({
   expenses:[],progress:[],notes:[],mealChecks:{},workoutChecks:{}
 });
 function workspace(){userData.workspace={...emptyWorkspace(),...(userData.workspace||{})};return userData.workspace}
-function show(target){screens.forEach(x=>$(x).classList.add("hidden"));$(target).classList.remove("hidden")}
+function show(target){
+  screens.forEach(x=>$(x).classList.add("hidden"));
+  $(target).classList.remove("hidden");
+  const toggle=$("#languageToggle"); if(toggle) toggle.classList.toggle("hidden",target!=="#landing");
+  setTimeout(()=>applyLanguage($(target)),0)
+}
 function toast(text){const x=$("#toast");x.textContent=text;x.classList.add("show");setTimeout(()=>x.classList.remove("show"),2200)}
 async function saveData(){await setDoc(doc(db,"users",currentUser.uid),{workspace:userData.workspace},{merge:true})}
-function formatDate(d){return new Intl.DateTimeFormat("ar-JO",{day:"numeric",month:"long",year:"numeric"}).format(new Date(`${d}T12:00:00`))}
-function money(n){return `${Number(n||0).toFixed(2)} د.أ`}
+function formatDate(d){return new Intl.DateTimeFormat(lang==="ar"?"ar-JO":"en-JO",{day:"numeric",month:"long",year:"numeric"}).format(new Date(`${d}T12:00:00`))}
+function money(n){return lang==="ar"?`${Number(n||0).toFixed(2)} د.أ`:`JOD ${Number(n||0).toFixed(2)}`}
 const canEdit=()=>["owner","active","trial"].includes(billing.mode);
+async function syncPlanLanguage(force=false){
+  if(!currentUser||!userData.plan)return false;
+  const storedLanguage=userData.planLanguage||"ar";
+  if(!force&&storedLanguage===lang)return false;
+  if(!canEdit())return false;
+  try{
+    showLoginProgress(lang==="en"?"Preparing your English plan…":"نجهّز خطتك العربية…",lang==="en"?"Wazen is adapting your plan to the selected language.":"وازن يكيّف خطتك مع اللغة المختارة.");
+    const token=await currentUser.getIdToken(true);
+    const response=await fetch(`${AI_ENDPOINT}/plan/translate`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`,"X-Wazen-Language":lang},body:JSON.stringify({plan:userData.plan,language:lang})});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result.plan)throw new Error(result.error||"تعذر تحديث لغة الخطة");
+    userData.plan=result.plan; userData.planLanguage=lang;
+    await setDoc(doc(db,"users",currentUser.uid),{plan:result.plan,planLanguage:lang},{merge:true});
+    return true;
+  }catch(e){console.error(e);return false;}
+}
 async function loadBilling(){
   const token=await currentUser.getIdToken(true);
-  const response=await fetch(`${AI_ENDPOINT}/billing/status`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`}});
+  const response=await fetch(`${AI_ENDPOINT}/billing/status`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`,"X-Wazen-Language":lang}});
   const result=await response.json().catch(()=>({}));
   if(!response.ok||!result.mode)throw new Error(result.error||"تعذر التحقق من حالة الاشتراك");
   billing=result;
@@ -99,6 +180,7 @@ function showSubscription(message){
 }
 
 onAuthStateChanged(auth,async user=>{
+  if(user && authBootChecked)showLoginProgress("جارٍ فتح وازن","نحمّل بياناتك ونجهّز لوحة التحكم…");
   if(!authBootChecked){
     authBootChecked=true;
     const started=sessionStorage.getItem("wazen-session-started")==="1";
@@ -106,7 +188,7 @@ onAuthStateChanged(auth,async user=>{
     if(user&&!started){await signOut(auth);show("#auth");return}
   }
   currentUser=user;
-  if(!user)return show("#auth");
+  if(!user)return show("#landing");
   try{
     const snap=await getDoc(doc(db,"users",user.uid));
     userData=snap.exists()?snap.data():{};
@@ -119,6 +201,10 @@ onAuthStateChanged(auth,async user=>{
       return;
     }
     workspace();
+    if(userData.onboardingComplete&&userData.plan){
+      if(!userData.planLanguage){userData.planLanguage="ar";await setDoc(doc(db,"users",user.uid),{planLanguage:"ar"},{merge:true});}
+      if(userData.planLanguage!==lang) await syncPlanLanguage(true);
+    }
     if(billing.mode==="locked")return showSubscription("انتهت التجربة وفترة المشاهدة. بياناتك محفوظة وستعود كاملة فور الاشتراك.");
     if(billing.mode==="read_only"&&!(userData.onboardingComplete&&userData.plan))return showSubscription("انتهت التجربة قبل إنشاء خطتك. اشترك للمتابعة وإنشاء خطة شخصية.");
     if(userData.onboardingComplete&&userData.plan){show("#dashboard");renderDashboard("home")}
@@ -126,24 +212,50 @@ onAuthStateChanged(auth,async user=>{
   }catch(e){console.error(e);show("#auth");$("#authError").textContent=`تعذر تحميل الحساب: ${e.code||e.message}`}
 });
 
+const openAuth=()=>{show("#auth");window.scrollTo({top:0,behavior:"smooth"});};
+["#landingLogin","#landingStart","#landingStartBottom"].forEach(sel=>$(sel)?.addEventListener("click",openAuth));
+$("#backToLanding")?.addEventListener("click",()=>show("#landing"));
+
 $$("[data-auth-tab]").forEach(b=>b.onclick=()=>{
   mode=b.dataset.authTab;
   $$("[data-auth-tab]").forEach(x=>x.classList.toggle("active",x===b));
   $(".signup-only").classList.toggle("hidden",mode!=="signup");
   $("#authSubmit").textContent=mode==="signup"?"إنشاء الحساب":"تسجيل الدخول";
 });
+function setAuthBusy(busy,label="جاري تسجيل الدخول..."){
+  const button=$("#authSubmit");
+  if(!button)return;
+  button.disabled=busy;
+  button.classList.toggle("is-loading",busy);
+  button.innerHTML=busy?`<span class="btn-loader" aria-hidden="true"></span>${label}`:(mode==="signup"?"إنشاء الحساب":"تسجيل الدخول <span>←</span>");
+  $("#googleLogin").disabled=busy;
+  $$("[data-auth-tab]").forEach(x=>x.disabled=busy);
+}
+function showLoginProgress(title="جارٍ تجهيز حسابك",subtitle="نتحقق من بياناتك ونجهّز مساحتك الشخصية…"){
+  $("#loaderTitle").textContent=title;
+  $("#loaderSubtitle").textContent=subtitle;
+  show("#loader");
+}
 $("#authForm").onsubmit=async e=>{
   e.preventDefault();$("#authError").textContent="";
+  const action=mode==="signup"?"signup":"login";
+  setAuthBusy(true,mode==="signup"?"جاري إنشاء حسابك...":"جاري تسجيل الدخول...");
   try{
     await persistenceReady;
     if(mode==="signup"){
-      const c=await createUserWithEmailAndPassword(auth,$("#email").value,$("#password").value);
-      await updateProfile(c.user,{displayName:$("#name").value});
-      await setDoc(doc(db,"users",c.user.uid),{name:$("#name").value,email:c.user.email,onboardingComplete:false,profileVersion:PROFILE_VERSION,workspace:emptyWorkspace()});
-    }else await signInWithEmailAndPassword(auth,$("#email").value,$("#password").value);
-  }catch(e){$("#authError").textContent=`تعذر تسجيل الدخول: ${e.code||e.message}`}
+      const c=await createUserWithEmailAndPassword(auth,$("#email").value.trim(),$("#password").value);
+      await updateProfile(c.user,{displayName:$("#name").value.trim()});
+      await setDoc(doc(db,"users",c.user.uid),{name:$("#name").value.trim(),email:c.user.email,onboardingComplete:false,profileVersion:PROFILE_VERSION,workspace:emptyWorkspace()});
+    }else await signInWithEmailAndPassword(auth,$("#email").value.trim(),$("#password").value);
+    showLoginProgress(mode==="signup"?"تم إنشاء حسابك":"تم تسجيل الدخول","لحظات ونجهّز لك لوحة وازن…");
+  }catch(e){console.error(e);setAuthBusy(false);$("#authError").textContent=friendlyAuthError(e,action)}
 };
-$("#googleLogin").onclick=async()=>{try{$("#authError").textContent="";await persistenceReady;await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){$("#authError").textContent=`تعذر تسجيل Google: ${e.code||e.message}`}};
+$("#googleLogin").onclick=async()=>{
+  $("#authError").textContent="";
+  setAuthBusy(true,"جاري تسجيل الدخول...");
+  try{await persistenceReady;await signInWithPopup(auth,new GoogleAuthProvider());showLoginProgress("تم تسجيل الدخول","نجهّز لوحة وازن الخاصة بك…")}
+  catch(e){console.error(e);setAuthBusy(false);$("#authError").textContent=friendlyAuthError(e,"login")}
+};
 $("#resetPassword").onclick=()=>{
   $("#resetEmail").value=$("#email").value.trim();
   $("#resetStatus").classList.add("hidden");
@@ -224,26 +336,29 @@ function showStepError(message,field){
 function validateCurrentStep(){
   $("#stepError")?.remove();
   $$("#questionBody input,#questionBody textarea,#questionBody select").forEach(el=>{el.classList.remove("field-error");el.removeAttribute("aria-invalid")});
-  if(step===0&&!(answers.roles||[]).length){showStepError("اختر وضعك الحالي للمتابعة.");return false}
-  if(step===2&&!answers.goal){showStepError("اختر هدفك للمتابعة.");return false}
+  if(step===0&&!(answers.roles||[]).length){showStepError(lang==="en"?"Choose your current situation to continue.":"اختر وضعك الحالي للمتابعة.");return false}
+  if(step===2&&!answers.goal){showStepError(lang==="en"?"Choose your goal to continue.":"اختر هدفك للمتابعة.");return false}
   const fields=$$("#questionBody input,#questionBody textarea,#questionBody select");
   for(const field of fields){
     if(optionalOnboardingFields.has(field.id)||field.disabled)continue;
     const empty=field.type==="checkbox"?!field.checked:String(field.value??"").trim()==="";
     if(empty||!field.checkValidity()){
       const label=field.closest("label")?.childNodes?.[0]?.textContent?.trim()||"هذا الحقل";
-      showStepError(`أكمل حقل «${label}» بشكل صحيح قبل المتابعة.`,field);
+      showStepError(lang==="en"?`Complete “${translateString(label)}” correctly before continuing.`:`أكمل حقل «${label}» بشكل صحيح قبل المتابعة.`,field);
       return false;
     }
   }
   return true;
 }
 function renderStep(){
-  $("#stepLabel").textContent=`الخطوة ${step+1} من ${steps.length}`;
+  $("#stepLabel").textContent=lang==="en"?`Step ${step+1} of ${steps.length}`:`الخطوة ${step+1} من ${steps.length}`;
   $("#progressBar").style.width=`${(step+1)/steps.length*100}%`;
   $("#questionBody").innerHTML=`<h1>${steps[step].title}</h1><p>${steps[step].desc}</p>${steps[step].html()}`;
   $("#prevStep").style.visibility=step?"visible":"hidden";
   $("#nextStep").textContent=step===steps.length-1?"✦ إنشاء خطتي":"التالي";
+  applyLanguage($("#questionBody"));
+  const stepLabel=$("#stepLabel");
+  if(stepLabel) stepLabel.textContent=lang==="en"?`Step ${step+1} of ${steps.length}`:`الخطوة ${step+1} من ${steps.length}`;
   ["gender","activityLevel","goalPace","dietType","cookingAccess","trainingType","examSystem","stillStudying"].forEach(k=>{if($("#"+k)&&answers[k])$("#"+k).value=answers[k]});
 }
 function collect(){
@@ -296,12 +411,12 @@ async function generatePlan(){
     const planAnswers=isTraining()
       ?{...answers,workoutTemplate:DEFAULT_WORKOUT_SPLIT,workoutInstructions:"التزم بهذه التقسيمة وأعداد التمارين والجولات والتكرارات والأجهزة. عدّل التمرين فقط عند وجود إصابة أو عدم توفر جهاز، ولا تقترح أوزانًا قصوى."}
       :{...answers,trainingDays:0,workoutInstructions:"المستخدم لا يتمرن حاليًا. لا تنشئ برنامج تمارين، ولا تقترح أجهزة أو جولات. اكتفِ بحركة يومية خفيفة اختيارية وآمنة."};
-    const response=await fetch(AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({answers:planAnswers})});
+    const response=await fetch(AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${token}`},body:JSON.stringify({answers:planAnswers,language:lang,productLanguage:lang})});
     const result=await response.json();
     if(!response.ok||!result.plan)throw new Error(result.error||"تعذر إنشاء الخطة");
-    await setDoc(doc(db,"users",currentUser.uid),{answers,plan:result.plan,onboardingComplete:true,profileVersion:PROFILE_VERSION},{merge:true});
-    userData={...userData,answers,plan:result.plan,onboardingComplete:true,profileVersion:PROFILE_VERSION};show("#dashboard");renderDashboard("home");
-  }catch(e){console.error(e);show(userData.plan?"#dashboard":"#onboarding");if(userData.plan)renderDashboard(view);alert(`تعذر إنشاء الخطة: ${friendlyError(e.message)}`)}
+    await setDoc(doc(db,"users",currentUser.uid),{answers,plan:result.plan,planLanguage:lang,onboardingComplete:true,profileVersion:PROFILE_VERSION},{merge:true});
+    userData={...userData,answers,plan:result.plan,planLanguage:lang,onboardingComplete:true,profileVersion:PROFILE_VERSION};show("#dashboard");renderDashboard("home");
+  }catch(e){console.error(e);show(userData.plan?"#dashboard":"#onboarding");if(userData.plan)renderDashboard(view);alert(translateString(`تعذر إنشاء الخطة: ${friendlyError(e.message)}`))}
 }
 
 const modalSchemas={
@@ -323,6 +438,7 @@ function openModal(type,editId=null){
     return `<label>${label}<input name="${name}" type="${type2}" step="${type2==="number"?"0.1":""}" value="${esc(val)}" ${name==="title"||name==="name"||name==="amount"?"required":""}></label>`;
   }).join("");
   $("#modal").classList.remove("hidden");
+  applyLanguage($("#modal"));
 }
 function collectionFor(type){return({event:"events",course:"courses",task:"tasks",habit:"habits",expense:"expenses",progress:"progress",note:"notes"})[type]}
 function closeModal(){$("#modal").classList.add("hidden");modalState=null}
@@ -352,16 +468,79 @@ function subscriptionAction(location="home"){
   return `<button class="primary subscription-cta ${location==="settings"?"wide":""}" data-open-subscription>✦ الاشتراك في وازن Pro</button>`;
 }
 
+function smartInsights(){
+  const w=workspace(), p=plan(), todayKey=today();
+  const openTasks=w.tasks.filter(x=>!x.done && (!x.date || x.date<=todayKey));
+  const doneTasks=w.tasks.filter(x=>x.done).length;
+  const totalTasks=w.tasks.length;
+  const habitDone=w.habits.filter(h=>Number(h.value||0)>=Number(h.target||1)).length;
+  const totalHabits=Math.max(1,w.habits.length);
+  const spent=w.expenses.filter(x=>x.type==="مصروف"&&x.date===todayKey).reduce((s,x)=>s+Number(x.amount||0),0);
+  const targetExpense=Number(userData.answers?.expenses||0);
+  const messages=[];
+  if(openTasks.length) messages.push({icon:"↗",title:"أولوية اليوم",text:`ابدأ بـ «${openTasks[0].title}» قبل أي مهمة أخرى.`});
+  if(habitDone<totalHabits) messages.push({icon:"◷",title:"ثبات العادات",text:`أكملت ${habitDone} من ${totalHabits} عادات اليوم. خطوة صغيرة الآن ترفع مؤشر التوازن.`});
+  if(targetExpense&&spent>targetExpense) messages.push({icon:"◈",title:"راقب المصروف",text:`مصروف اليوم ${money(spent)} أعلى من هدفك اليومي ${money(targetExpense)}.`});
+  if(!messages.length) messages.push({icon:"✦",title:"إيقاع ممتاز",text:"لا توجد إشارات عاجلة. حافظ على نفس الإيقاع وخذ استراحة قصيرة قبل المهمة التالية."});
+  const completion=totalTasks?Math.round(doneTasks/totalTasks*100):0;
+  const balance=Math.round(completion*.55+(habitDone/totalHabits)*45);
+  return {messages,balance,completion,habitDone,totalHabits,spent,calories:Number(p.targets?.calories||0)};
+}
+function notifications(){
+  const w=workspace(), items=[];
+  w.events.filter(e=>e.date===today()).slice(0,3).forEach(e=>items.push({type:"today",title:e.title,text:`${e.time||"اليوم"} • ${e.type||"موعد"}`,icon:"▦"}));
+  w.tasks.filter(x=>!x.done&&x.date===today()).slice(0,3).forEach(x=>items.push({type:"task",title:"مهمة اليوم",text:x.title,icon:"✓"}));
+  if(billing.mode==="trial"&&Number(billing.daysRemaining||0)<=3)items.push({type:"billing",title:"التجربة تقترب من النهاية",text:`متبقي ${billing.daysRemaining||0} يوم.`,icon:"♢"});
+  if(billing.mode==="read_only")items.push({type:"billing",title:"الحساب في وضع المشاهدة",text:"فعّل Pro لاستعادة التعديل والميزات الذكية.",icon:"⚡"});
+  return items.slice(0,8);
+}
+function renderNotifications(){
+  const items=notifications();
+  const panel=$("#notificationPanel");
+  panel.innerHTML=`<div class="notification-head"><div><span>WAZEN CENTER</span><h3>الإشعارات</h3></div><button id="closeNotifications">×</button></div>${items.length?items.map(x=>`<button class="notification-item"><i>${x.icon}</i><div><b>${esc(x.title)}</b><small>${esc(x.text)}</small></div></button>`).join(""):empty("لا توجد إشعارات جديدة")}`;
+  panel.classList.remove("hidden");
+  $("#closeNotifications").onclick=()=>panel.classList.add("hidden");
+}
+function refreshNotificationBadge(){
+  const count=notifications().length, badge=$("#notificationCount");
+  if(!badge)return;
+  badge.textContent=count;
+  badge.classList.toggle("hidden",count===0);
+}
+function trendChart(){
+  const list=workspace().progress.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).slice(-7);
+  if(list.length<2) return `<div class="chart-empty"><span>↗</span><b>سجّل تقدمك مرتين على الأقل</b><small>سيظهر منحنى تطورك هنا تلقائيًا.</small></div>`;
+  const vals=list.map(x=>Number(x.weight||0));
+  const min=Math.min(...vals),max=Math.max(...vals),range=Math.max(1,max-min);
+  const pts=vals.map((v,i)=>`${Math.round(i*100/(vals.length-1))},${Math.round(86-(v-min)/range*60)}`).join(" ");
+  return `<div class="trend-chart"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><defs><linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4c91ff" stop-opacity=".35"/><stop offset="1" stop-color="#4c91ff" stop-opacity="0"/></linearGradient></defs><path class="chart-area" d="M ${pts} L 100 100 L 0 100 Z"></path><polyline points="${pts}"></polyline>${vals.map((v,i)=>`<circle cx="${Math.round(i*100/(vals.length-1))}" cy="${Math.round(86-(v-min)/range*60)}" r="1.6"></circle>`).join("")}</svg><div class="chart-labels">${list.map(x=>`<span>${esc(String(x.date).slice(5))}</span>`).join("")}</div></div>`;
+}
+
 function renderHome(){
   const p=plan(),w=workspace(),events=upcoming(),tasks=w.tasks.filter(x=>!x.done).sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
-  const completed=w.tasks.length?w.tasks.filter(x=>x.done).length/w.tasks.length*100:0;
-  const spent=w.expenses.filter(x=>x.type==="مصروف"&&x.date===today()).reduce((s,x)=>s+Number(x.amount),0);
-  return `<div class="hero"><div><h1>خطتك الشخصية جاهزة ✦</h1><p>${esc(p.summary)}</p></div><div class="home-actions"><span class="badge green">${Math.round(completed)}% إنجاز المهام</span>${subscriptionAction()}</div></div>
-  <div class="stats">${[["السعرات",p.targets.calories||"—"],["البروتين",`${p.targets.proteinGrams||"—"} غ`],["أقرب موعد",events[0]?formatDate(events[0].date):"لا يوجد"],["مصروف اليوم",money(spent)]].map(x=>`<article class="card"><span>${x[0]}</span><strong>${x[1]}</strong><small>ملخص اليوم</small></article>`).join("")}</div>
-  <div class="grid2"><article class="panel"><h2>الأهم الآن</h2>${tasks.slice(0,5).map(x=>row(x,{title:x.title,details:`${x.category} • ${x.date||"بدون موعد"}`})).join("")||empty("لا توجد مهام مفتوحة")}</article>
-  <article class="panel"><h2>المواعيد القادمة</h2>${events.slice(0,5).map(x=>row(x,{time:x.date,title:x.title,details:`${x.type}${x.course?` • ${x.course}`:""}`})).join("")||empty("أضف امتحانًا أو مشروعًا من التقويم")}</article></div>
-  <div class="grid2"><article class="panel"><h2>جدول اليوم المقترح</h2>${p.dailySchedule.slice(0,6).map(x=>row(x,{time:x.time,title:x.title,details:x.details})).join("")}</article>
-  <article class="panel"><h2>عادات اليوم</h2>${w.habits.slice(0,6).map(h=>`<div class="metric"><div><b>${esc(h.name)}</b><small class="muted"> ${h.value||0}/${h.target} ${esc(h.unit)}</small></div><button class="check ${(h.value||0)>=h.target?"done":""}" data-habit="${h.id}:1">✓</button></div>`).join("")}</article></div>`;
+  const insight=smartInsights(), nextEvent=events[0];
+  const todaySchedule=(p.dailySchedule||[]).slice(0,4), focus=todaySchedule[0]||{time:"—",title:"ابدأ بأهم خطوة",details:"أضف جدولك من قسم يومي"};
+  const habits=w.habits.slice(0,4);
+  const firstName=(currentUser.displayName||userData.name||"صديقي").split(" ")[0];
+  const quick=[["today","اليوم","جدولك ومهامك","↗"],["calendar","التقويم","المواعيد القادمة","▦"],[isTraining()?"workouts":"nutrition",isTraining()?"التمارين":"التغذية",isTraining()?"ابدأ تمرينك":"راجع وجباتك","✦"],["progress","التقدم","أرقامك ورسومك","↗"]];
+  const recentExpenses=w.expenses.filter(x=>x.type==="مصروف").slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,4);
+  return `<div class="command-hero premium-enter">
+    <div class="command-copy"><div class="eyebrow-row"><span class="live-dot"></span><span>WAZEN INTELLIGENCE • LIVE</span><span class="hero-date">${formatDate(today())}</span></div>
+      <h1>مرحبًا ${esc(firstName)}.<br><em>اليوم عندك مساحة للإنجاز.</em></h1>
+      <p>${esc(p.summary||"وازن يجمع أهدافك ومواعيدك وعاداتك في تجربة واحدة، ويحوّل بياناتك إلى خطوات عملية قابلة للتنفيذ.")}</p>
+      <div class="command-actions"><button class="primary" data-home-view="today">ابدأ يومي <span>←</span></button><button class="secondary" data-home-view="assistant">✦ اطلب تحليلًا ذكيًا</button></div>
+      <div class="hero-meta"><span>● النظام متصل</span><span>✓ بياناتك متزامنة</span><span>↗ ${insight.completion}% من المهام مكتملة</span></div>
+    </div><div class="command-score"><div class="score-ring" style="--score:${insight.balance*3.6}deg"><div><strong>${insight.balance}%</strong><span>توازن اليوم</span></div></div><small>مؤشر شخصي يتحدث مع إنجازاتك</small></div>
+  </div>
+  <div class="command-strip"><div><span>السعرات</span><strong>${insight.calories?insight.calories.toLocaleString(lang==="ar"?"ar-JO":"en-JO"):"—"}</strong><small>هدف يومي</small></div><div><span>العادات</span><strong>${insight.habitDone}/${insight.totalHabits}</strong><small>مكتملة اليوم</small></div><div><span>أقرب موعد</span><strong>${nextEvent?esc(nextEvent.time||"اليوم"):"—"}</strong><small>${nextEvent?esc(nextEvent.title):"لا يوجد موعد"}</small></div><div><span>مصروف اليوم</span><strong>${money(insight.spent)}</strong><small>مراقبة الميزانية</small></div></div>
+  <div class="section-heading-dashboard"><div><span>QUICK ACCESS</span><h2>كل أدواتك، بنقرة واحدة</h2></div><span class="muted">مصمم ليقلل وقت البحث ويزيد وقت الإنجاز</span></div>
+  <div class="quick-grid">${quick.map(([v,title,sub,icon])=>`<button class="quick-card" data-home-view="${v}"><i>${icon}</i><div><b>${title}</b><small>${sub}</small></div><span>↗</span></button>`).join("")}</div>
+  <div class="dashboard-columns"><article class="panel premium-panel focus-panel"><div class="panel-top"><div><span class="panel-kicker">FOCUS / NOW</span><h2>أهم شيء الآن</h2></div><span class="status-pill">جاهز</span></div><div class="focus-main"><div class="focus-icon">✦</div><div><span>${esc(focus.time||"الآن")}</span><h3>${esc(focus.title||"ابدأ بخطوتك التالية")}</h3><p>${esc(focus.details||"ركّز على خطوة واحدة واترك الباقي لوقته.")}</p></div></div><div class="focus-progress"><span>تقدم المهام</span><b>${insight.completion}%</b><i><u style="width:${insight.completion}%"></u></i></div><button class="secondary wide" data-home-view="today">فتح جدول اليوم ←</button></article>
+    <article class="panel premium-panel next-panel"><div class="panel-top"><div><span class="panel-kicker">UP NEXT</span><h2>القادم</h2></div><span class="mini-count">${events.length} مواعيد</span></div><div class="timeline">${events.slice(0,4).map((x,i)=>`<div class="timeline-item"><i class="${i===0?"active":""}"></i><div><span>${esc(x.date||"")}${x.time?` • ${esc(x.time)}`:""}</span><b>${esc(x.title)}</b><small>${esc(x.type||"موعد")}</small></div></div>`).join("")||empty("لا توجد مواعيد قادمة")}</div><button class="secondary wide" data-home-view="calendar">عرض التقويم ←</button></article></div>
+  <div class="dashboard-columns lower"><article class="panel premium-panel"><div class="panel-top"><div><span class="panel-kicker">RHYTHM / TODAY</span><h2>إيقاع يومك</h2></div><span class="badge green">${insight.balance>=75?"ممتاز":"يتحسن"}</span></div><div class="rhythm-list">${todaySchedule.map(x=>`<div class="rhythm-item"><span>${esc(x.time||"—")}</span><div><b>${esc(x.title)}</b><small>${esc(x.details||"")}</small></div><i>•</i></div>`).join("")||empty("لا يوجد جدول مقترح لليوم")}</div></article>
+    <article class="panel premium-panel"><div class="panel-top"><div><span class="panel-kicker">HABITS / LIVE</span><h2>عاداتك</h2></div><button class="icon-btn" data-home-view="habits">كل العادات ↗</button></div><div class="habit-dashboard">${habits.map(h=>{const pct=Math.min(100,Math.round(Number(h.value||0)/Math.max(1,Number(h.target||1))*100));return `<div><div><b>${esc(h.name)}</b><span>${h.value||0}/${h.target} ${esc(h.unit)}</span></div><i><u style="width:${pct}%"></u></i></div>`}).join("")||empty("أضف عاداتك")}</div></article></div>
+  <div class="dashboard-columns lower"><article class="panel premium-panel"><div class="panel-top"><div><span class="panel-kicker">PROGRESS / 07 DAYS</span><h2>لمحة عن تقدمك</h2></div><button class="icon-btn" data-home-view="progress">فتح التقدم ↗</button></div>${trendChart()}</article><article class="panel premium-panel"><div class="panel-top"><div><span class="panel-kicker">SMART SIGNALS</span><h2>إشارات وازن</h2></div><span class="badge">تحليل لحظي</span></div><div class="smart-list">${insight.messages.map(m=>`<div class="smart-row"><i>${m.icon}</i><div><b>${esc(m.title)}</b><p>${esc(m.text)}</p></div></div>`).join("")}</div></article></div>
+  <div class="ai-insight"><div class="ai-orbit">✦</div><div><span>WAZEN INTELLIGENCE</span><h3>مستعد لتحديث خطتك؟</h3><p>${esc(insight.messages[0].text)} يمكنك إعادة بناء الخطة من بياناتك الحالية في أي وقت.</p></div><button class="primary" data-home-view="assistant">فتح المساعد الذكي ↗</button></div>`;
 }
 function renderToday(){
   const p=plan(),tasks=workspace().tasks.filter(x=>x.date===today()||(!x.date&&!x.done));
@@ -377,7 +556,7 @@ function renderCalendar(){
   const title=hasRole("school")?"التقويم المدرسي":hasRole("university")?"التقويم الجامعي":"التقويم والمواعيد";
   const subtitle=isStudying()?"اختبارات، واجبات، مشاريع ومواعيد مهمة.":"دوام، مقابلات، التزامات ومواعيد شخصية.";
   return `<div class="hero"><div><h1>${title}</h1><p>${subtitle}</p></div><button class="primary" data-add="event">＋ موعد</button></div>
-  <article class="panel" style="margin-top:20px"><div class="calendar-head"><button class="secondary" data-month="-1">‹</button><h2>${new Intl.DateTimeFormat("ar-JO",{month:"long",year:"numeric"}).format(calendarDate)}</h2><button class="secondary" data-month="1">›</button></div><div class="calendar-grid">${names.map(n=>`<b class="muted">${n}</b>`).join("")}${days}</div></article>
+  <article class="panel" style="margin-top:20px"><div class="calendar-head"><button class="secondary" data-month="-1">‹</button><h2>${new Intl.DateTimeFormat(lang==="ar"?"ar-JO":"en-JO",{month:"long",year:"numeric"}).format(calendarDate)}</h2><button class="secondary" data-month="1">›</button></div><div class="calendar-grid">${names.map(n=>`<b class="muted">${n}</b>`).join("")}${days}</div></article>
   <article class="panel" style="margin-top:14px">${sectionHeader("كل المواعيد","event")}${events.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).map(x=>row(x,{time:x.date,title:x.title,details:`${x.type} • ${x.course||""} ${x.time||""}`,collection:"events",type:"event"})).join("")||empty("لا توجد مواعيد")}</article>`;
 }
 function renderStudy(){
@@ -412,7 +591,7 @@ function renderWorkouts(){
   return `<div class="hero"><div><h1>التمارين</h1><p>اضغط على أي يوم لعرض الأجهزة والجولات والتكرارات.</p></div><span class="badge">4 أيام تدريب</span></div>
   <div class="grid2 workout-grid">${DEFAULT_WORKOUT_SPLIT.map((x,i)=>`<article class="panel workout-card ${expandedWorkout===i?"expanded":""}" data-workout-open="${i}">
     <div class="section-title"><div><span class="badge">${esc(x.day)}</span><h2>${esc(x.focus)}</h2><small class="muted">${x.exercises.length} تمارين</small></div><div class="workout-summary"><strong>60 دقيقة</strong><span>${expandedWorkout===i?"إخفاء التفاصيل ▲":"عرض التمارين ▼"}</span></div></div>
-    ${expandedWorkout===i?`<div class="exercise-list">${x.exercises.map((ex,n)=>`<div class="exercise-item"><div class="exercise-number">${n+1}</div><div><b>${esc(ex.name)}</b><small>الجهاز: ${esc(ex.machine)} • العضلة: ${esc(ex.muscle)}</small><small>${esc(ex.sets)} جولات × ${esc(ex.reps)} تكرار • راحة ${esc(ex.restSeconds)} ثانية</small><small>${esc(ex.notes)}</small></div></div>`).join("")}</div>`:""}
+    ${expandedWorkout===i?`<div class="exercise-list">${x.exercises.map((ex,n)=>`<div class="exercise-item"><div class="exercise-number">${n+1}</div><div><b>${esc(lang==="en"?ex.nameEn:ex.nameAr)}</b><small>الجهاز: ${esc(ex.machine)} • العضلة: ${esc(ex.muscle)}</small><small>${esc(ex.sets)} جولات × ${esc(ex.reps)} تكرار • راحة ${esc(ex.restSeconds)} ثانية</small><small>${esc(ex.notes)}</small></div></div>`).join("")}</div>`:""}
     <button class="check ${checks[i]?"done":""}" data-workout="${i}" title="تحديد اليوم كمكتمل">✓</button>
   </article>`).join("")}</div>`;
 }
@@ -432,7 +611,7 @@ function renderProgress(){
   const change=latest&&first?Number(latest.weight)-Number(first.weight):0;
   return `<div class="hero"><div><h1>تقدمي</h1><p>الوزن والقياسات والنوم والدراسة.</p></div><button class="primary" data-add="progress">＋ تسجيل جديد</button></div>
   <div class="stats"><article class="card"><span>الوزن الحالي</span><strong>${latest?.weight||userData.answers?.weight||"—"} كغم</strong></article><article class="card"><span>التغير</span><strong class="${change<=0?"money-positive":"money-negative"}">${change>0?"+":""}${change.toFixed(1)} كغم</strong></article><article class="card"><span>الخصر</span><strong>${latest?.waist||"—"} سم</strong></article><article class="card"><span>ساعات الدراسة</span><strong>${latest?.studyHours||"—"}</strong></article></div>
-  <article class="panel" style="margin-top:14px">${list.slice().reverse().map(x=>row(x,{time:x.date,title:`${x.weight} كغم • خصر ${x.waist||"—"} سم`,details:`دراسة ${x.studyHours||0}س • نوم ${x.sleepHours||0}س • ${x.note||""}`,collection:"progress",type:"progress"})).join("")||empty("سجل وزنك وتقدمك أسبوعيًا")}</article>`;
+  <div class="dashboard-columns lower"><article class="panel premium-panel"><div class="panel-top"><div><span class="panel-kicker">TREND</span><h2>منحنى الوزن</h2></div><span class="badge">آخر 7 سجلات</span></div>${trendChart()}</article><article class="panel premium-panel"><div class="panel-top"><div><span class="panel-kicker">LOG</span><h2>السجل الأخير</h2></div></div>${list.slice().reverse().map(x=>row(x,{time:x.date,title:`${x.weight} كغم • خصر ${x.waist||"—"} سم`,details:`دراسة ${x.studyHours||0}س • نوم ${x.sleepHours||0}س • ${x.note||""}`,collection:"progress",type:"progress"})).join("")||empty("سجل وزنك وتقدمك أسبوعيًا")}</article></div>`;
 }
 function renderNotes(){
   return `<div class="hero"><div><h1>الملاحظات</h1><p>أفكارك وقوائمك في مكان واحد.</p></div><button class="primary" data-add="note">＋ ملاحظة</button></div><div class="grid3">${workspace().notes.map(n=>`<article class="card note-card"><span>${esc(n.color)}</span><h2>${esc(n.title)}</h2><p>${esc(n.text)}</p><div class="toolbar"><button class="icon-btn" data-edit="note:${n.id}">تعديل</button><button class="icon-btn red" data-delete="notes:${n.id}">حذف</button></div></article>`).join("")||empty("أضف أول ملاحظة")}</div>`;
@@ -477,11 +656,18 @@ function renderDashboard(next="home"){
   if(billing.mode==="trial")$("#accessBanner").innerHTML=`<div><b>تجربتك المجانية فعّالة</b><span>بقي ${billing.daysRemaining||0} يومًا لاستخدام جميع الميزات. يمكنك الاشتراك الآن أو متابعة التجربة.</span></div><button class="secondary compact" id="bannerSubscribe">عرض الاشتراكات</button>`;
   if(readOnly)$("#accessBanner").innerHTML=`<div><b>فترة مشاهدة فقط</b><span>بقي ${billing.daysRemaining||0} أيام قبل قفل الحساب. اشترك لاستعادة التعديل والذكاء الاصطناعي.</span></div><button class="primary compact" id="bannerSubscribe">عرض الاشتراكات</button>`;
   $$("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
-  $("#view").innerHTML=(renderers[view]||renderHome)();
+  const viewEl=$("#view");
+  viewEl.classList.remove("view-transition");
+  void viewEl.offsetWidth;
+  viewEl.innerHTML=(renderers[view]||renderHome)();
+  viewEl.classList.add("view-transition");
   $("#dashboard aside").classList.remove("open");
   bindViewActions();
+  applyLanguage($("#dashboard"));
+  refreshNotificationBadge();
 }
 function bindViewActions(){
+  $$("[data-home-view]").forEach(b=>b.onclick=()=>renderDashboard(b.dataset.homeView));
   if(billing.mode==="read_only"){
     $$("[data-add],[data-edit],[data-delete],[data-task],[data-habit],[data-meal],[data-workout],#restartOnboarding,#assistantRegenerate,#regenNutrition").forEach(b=>{b.disabled=true;b.title="التعديل يحتاج اشتراكًا فعالًا"});
   }
@@ -504,7 +690,12 @@ function bindViewActions(){
 $$("[data-view]").forEach(b=>b.onclick=()=>renderDashboard(b.dataset.view));
 $("#quickAdd").onclick=()=>canEdit()&&openModal("task");
 $("#menu").onclick=()=>$("#dashboard aside").classList.toggle("open");
+$("#notificationButton").onclick=()=>{const p=$("#notificationPanel");if(p.classList.contains("hidden"))renderNotifications();else p.classList.add("hidden")};
+document.addEventListener("click",e=>{const panel=$("#notificationPanel"),button=$("#notificationButton");if(panel&&!panel.classList.contains("hidden")&&!panel.contains(e.target)&&!button.contains(e.target))panel.classList.add("hidden")});
 $("#logout1").onclick=$("#logout2").onclick=()=>signOut(auth);
 $$("[data-subscribe]").forEach(button=>button.onclick=()=>window.location.href=checkoutUrl(button.dataset.subscribe));
 $("#checkSubscription").onclick=async()=>{try{$("#checkSubscription").disabled=true;await loadBilling();if(billing.mode==="locked"||billing.mode==="read_only")return showSubscription();const snap=await getDoc(doc(db,"users",currentUser.uid));userData=snap.exists()?snap.data():{};show("#dashboard");renderDashboard("home")}catch(e){toast(friendlyError(e.message))}finally{$("#checkSubscription").disabled=false}};
 $("#subscriptionLogout").onclick=()=>signOut(auth);
+
+$("#languageToggle")?.addEventListener("click",()=>setLanguage(lang==="ar"?"en":"ar"));
+applyLanguage();

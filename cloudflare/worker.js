@@ -1,10 +1,46 @@
 const ALLOWED_ORIGINS = [
   "https://hayati-app-35028.web.app",
-  "https://hayati-app-35028.firebaseapp.com"
+  "https://hayati-app-35028.firebaseapp.com",
+  "http://127.0.0.1:5500",
+  "http://localhost:5500"
 ];
 const FIREBASE_API_KEY = "AIzaSyD0aqTFxCsXOROKXaLZE9IV0zGmWCqsKQ8";
 const TRIAL_DAYS = 14;
 const READ_ONLY_DAYS = 7;
+
+
+function requestLanguage(request) {
+  return request.headers.get("X-Wazen-Language") === "en" ? "en" : "ar";
+}
+function message(key, language) {
+  const en = {
+    invalidSession: "Your sign-in session is invalid.",
+    notFound: "Route not found.",
+    aiExpired: "Your AI access has expired. Subscribe to continue.",
+    planExpired: "Your plan creation access has expired. Subscribe to continue.",
+    incomplete: "Some required answers are missing.",
+    aiUnavailable: "We couldn't reach the AI assistant.",
+    noPlan: "No plan was generated.",
+    planNotFound: "The plan was not found.",
+    translateFailed: "We couldn't translate the plan.",
+    translatedMissing: "The translated plan was not returned.",
+    buildFailed: "Something went wrong while building the plan."
+  };
+  const ar = {
+    invalidSession: "جلسة تسجيل الدخول غير صالحة.",
+    notFound: "المسار غير موجود.",
+    aiExpired: "انتهت صلاحية استخدام الذكاء الاصطناعي. اشترك للمتابعة.",
+    planExpired: "انتهت صلاحية إنشاء الخطط. اشترك للمتابعة.",
+    incomplete: "الإجابات المطلوبة غير مكتملة.",
+    aiUnavailable: "تعذر الاتصال بالمساعد الذكي.",
+    noPlan: "لم يتم إنشاء خطة.",
+    planNotFound: "الخطة غير موجودة.",
+    translateFailed: "تعذر ترجمة الخطة.",
+    translatedMissing: "لم يتم إرجاع الخطة المترجمة.",
+    buildFailed: "حدث خطأ أثناء إنشاء الخطة."
+  };
+  return (language === "en" ? en : ar)[key];
+}
 
 function headers(origin) {
   return {
@@ -90,26 +126,58 @@ async function webhook(request, env, origin) {
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
+    const language = requestLanguage(request);
     const path = new URL(request.url).pathname.replace(/\/+$/, "") || "/";
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: headers(origin) });
     if (request.method === "GET" && path === "/") return json({ status: "ok", message: "Wazen AI and billing are working" }, 200, origin);
     if (request.method === "POST" && path === "/billing/webhook") return webhook(request, env, origin);
     const user = await verifyFirebase(request);
-    if (!user?.localId) return json({ error: "جلسة تسجيل الدخول غير صالحة" }, 401, origin);
+    if (!user?.localId) return json({ error: message("invalidSession", language) }, 401, origin);
     const access = await entitlement(user, env);
     if (request.method === "POST" && path === "/billing/status") return json(access, 200, origin);
-    if (request.method !== "POST" || !["/", "/plan"].includes(path)) return json({ error: "المسار غير موجود" }, 404, origin);
-    if (!["owner", "active", "trial"].includes(access.mode)) return json({ error: "انتهت صلاحية إنشاء الخطط. اشترك للمتابعة.", access }, 402, origin);
+    if (request.method !== "POST" || !["/", "/plan", "/plan/translate"].includes(path)) return json({ error: message("notFound", language) }, 404, origin);
+    if (path === "/plan/translate") {
+      if (!["owner", "active", "trial"].includes(access.mode)) return json({ error: message("aiExpired", language), access }, 402, origin);
+      try {
+        const body = await request.json();
+        const targetLanguage = body?.language === "en" ? "en" : "ar";
+        const plan = body?.plan;
+        if (!plan || typeof plan !== "object") return json({ error: message("planNotFound", language) }, 400, origin);
+        const instruction = targetLanguage === "en"
+          ? `Translate/rewrite ALL user-facing string values in this Wazen plan into natural, polished English. Do not leave Arabic or mixed-language text. Keep the JSON keys, numbers, arrays, and structure EXACTLY unchanged. Do not add or remove fields.`
+          : `حوّل ALL قيم النص الظاهرة للمستخدم في خطة وازن إلى عربية طبيعية واحترافية. لا تترك نصًا إنجليزيًا أو خليطًا لغويًا إلا عند الضرورة مثل أسماء العلامات التجارية. حافظ على مفاتيح JSON والأرقام والمصفوفات والبنية كما هي تمامًا. لا تضف أو تحذف حقولًا.`;
+        const prompt = `${instruction}\n\nPLAN JSON:\n${JSON.stringify(plan)}\n\nReturn JSON ONLY.`;
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${env.GEMINI_API_KEY}`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", temperature: 0.2 } })
+        });
+        if (!response.ok) { console.error(await response.text()); return json({ error: message("translateFailed", language) }, 502, origin); }
+        const result = await response.json();
+        const output = result.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!output) return json({ error: message("translatedMissing", language) }, 502, origin);
+        return json({ plan: JSON.parse(output), language: targetLanguage, access }, 200, origin);
+      } catch (error) { console.error(error); return json({ error: "حدث خطأ أثناء ترجمة الخطة" }, 500, origin); }
+    }
+    if (!["owner", "active", "trial"].includes(access.mode)) return json({ error: message("planExpired", language), access }, 402, origin);
     try {
       const body = await request.json();
       const answers = body?.answers;
-      if (!answers || typeof answers !== "object" || !answers.aiConsent) return json({ error: "الإجابات غير مكتملة" }, 400, origin);
-      const prompt = `أنت مساعد عربي متخصص في تنظيم الحياة والدراسة والصحة والتمارين والميزانية.
-حلل البيانات التالية وأنشئ خطة عملية واقعية باللغة العربية:
+      if (!answers || typeof answers !== "object" || !answers.aiConsent) return json({ error: message("incomplete", language) }, 400, origin);
+      const requestedLanguage = body?.language === "en" ? "en" : "ar";
+      const languageInstruction = requestedLanguage === "en"
+        ? `You are Wazen's global AI life-planning assistant.
+ALL user-facing generated content MUST be in English. Do not output Arabic, Arabic labels, Arabic day names, or mixed-language phrases. Use English for every string value including summary, schedule titles/details, meals, foods, workouts, habits, study tasks, and safety notes. Keep JSON keys exactly as specified.`
+        : `أنت مساعد وازن الذكي لتخطيط الحياة.
+يجب أن تكون ALL المخرجات الظاهرة للمستخدم باللغة العربية فقط. لا تستخدم الإنجليزية داخل قيم النص إلا عند الضرورة القصوى مثل أسماء العلامات التجارية. استخدم العربية في الملخص، الجدول، الوجبات، الأطعمة، التمارين، العادات، مهام الدراسة، وأي ملاحظات. حافظ على مفاتيح JSON كما هي.`;
+      const prompt = `${languageInstruction}
+
+حلل البيانات التالية وأنشئ خطة عملية وواقعية تناسب أهداف المستخدم ومواعيده ونومه وميزانيته وطعامه ونشاطه. لا تقدم تشخيصًا طبيًا أو وصفة علاجية.
+
+USER DATA:
 ${JSON.stringify(answers)}
-راعِ المواعيد والنوم والميزانية والطعام والهدف. لا تقدم تشخيصًا طبيًا.
-أرجع JSON فقط بهذا البناء:
-{"summary":"ملخص","targets":{"calories":2200,"proteinGrams":160,"waterCups":8,"sleepHours":7.5},"dailySchedule":[{"time":"07:30","title":"الاستيقاظ","details":"الاستعداد","category":"personal"}],"meals":[{"name":"الإفطار","time":"08:00","foods":"تفاصيل دقيقة للكميات","calories":500}],"workouts":[{"day":"الأحد","focus":"تمرين","durationMinutes":60,"notes":"تفاصيل"}],"habits":["عادة"],"studyPlan":[{"time":"10:00","task":"مراجعة","durationMinutes":50}],"safetyNote":"خطة تنظيمية وليست وصفة طبية"}`;
+
+Return JSON ONLY with exactly this structure:
+{"summary":"...","targets":{"calories":2200,"proteinGrams":160,"waterCups":8,"sleepHours":7.5},"dailySchedule":[{"time":"07:30","title":"...","details":"...","category":"personal"}],"meals":[{"name":"...","time":"08:00","foods":"...","calories":500}],"workouts":[{"day":"...","focus":"...","durationMinutes":60,"notes":"..."}],"habits":["..."],"studyPlan":[{"time":"10:00","task":"...","durationMinutes":50}],"safetyNote":"..."}`;
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${env.GEMINI_API_KEY}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,15 +185,15 @@ ${JSON.stringify(answers)}
       });
       if (!response.ok) {
         console.error(await response.text());
-        return json({ error: "تعذر الاتصال بالمساعد الذكي" }, 502, origin);
+        return json({ error: message("aiUnavailable", language) }, 502, origin);
       }
       const result = await response.json();
       const output = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!output) return json({ error: "لم يتم إنشاء خطة" }, 502, origin);
+      if (!output) return json({ error: message("noPlan", language) }, 502, origin);
       return json({ plan: JSON.parse(output), access }, 200, origin);
     } catch (error) {
       console.error(error);
-      return json({ error: "حدث خطأ أثناء إنشاء الخطة" }, 500, origin);
+      return json({ error: message("buildFailed", language) }, 500, origin);
     }
   }
 };
